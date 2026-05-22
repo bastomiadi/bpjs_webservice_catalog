@@ -37,7 +37,7 @@ Features:
 | eRekamMedis | `https://apijkn.bpjs-kesehatan.go.id/erekammedis` | `https://new-apijkn.bpjs-kesehatan.go.id/erekammedis` |
 | Aplicares | `https://apijkn.bpjs-kesehatan.go.id/aplicaresws/rest` | `https://new-apijkn.bpjs-kesehatan.go.id/aplicaresws/rest` |
 
-> **Note:** Aplicares uses the same V1/V2 domain switching as other modules (no separate dev domain available).
+> **Note:** Aplicares uses V1 URL in Dev mode, and V1/V2 switching in Production mode.
 
 ### 3. **Dev/Production Mode Toggle**
 Toggle between development and production environments:

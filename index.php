@@ -61,7 +61,7 @@ if ($isDevMode) {
 }
 
 // Helper function to get base URL for each module
-// Aplicares doesn't have dev domain, so it always uses production (V1 or V2)
+// Aplicares: Dev mode uses V1, Production mode uses V1/V2 switching
 function getBaseUrl($moduleKey, $currentDomain, $isDevMode) {
     // Production paths for each module
     $prodPaths = [
@@ -86,8 +86,11 @@ function getBaseUrl($moduleKey, $currentDomain, $isDevMode) {
         'ws_rekam_medis' => 'apijkn-dev.bpjs-kesehatan.go.id/erekammedis_dev',
     ];
     
-    // Aplicares: use production domain (V1 or V2) - no dev domain available
+    // Aplicares: Dev mode uses V1, Production mode uses V1/V2
     if ($moduleKey === 'aplicares') {
+        if ($isDevMode) {
+            return 'https://apijkn.bpjs-kesehatan.go.id/aplicaresws/rest';
+        }
         $path = isset($prodPaths[$moduleKey]) ? $prodPaths[$moduleKey] : '';
         return 'https://' . $currentDomain . $path;
     }
