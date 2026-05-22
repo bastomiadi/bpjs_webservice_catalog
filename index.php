@@ -2324,7 +2324,11 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
         <div class="flex items-center gap-4">
             <div class="text-right">
                 <p class="text-xs text-bpjs-100">Cons ID</p>
-                <p class="text-white text-sm font-mono font-semibold"><?= htmlspecialchars($consId) ?></p>
+                <?php
+                // Mask Cons ID with asterisks for security
+                $maskedConsId = str_repeat('*', strlen($consId));
+                ?>
+                <p class="text-white text-sm font-mono font-semibold"><?= htmlspecialchars($maskedConsId) ?></p>
             </div>
             <div class="w-px h-8 bg-bpjs-500"></div>
             <div class="text-right">
