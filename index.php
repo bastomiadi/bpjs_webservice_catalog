@@ -119,6 +119,21 @@ $modules = [
                 'path'        => '/ref/kelas',
                 'description' => 'Mendapatkan daftar referensi kamar rumah sakit',
                 'params'      => [],
+                'format'      => [
+                    'response' => json_encode([
+                        'metadata' => [
+                            'code' => 1,
+                            'message' => 'OK',
+                            'totalitems' => 16
+                        ],
+                        'response' => [
+                            'list' => [
+                                ['kodekelas' => 'NON', 'namakelas' => '-'],
+                                ['kodekelas' => 'VVP', 'namakelas' => 'VVIP']
+                            ]
+                        ]
+                    ], JSON_PRETTY_PRINT),
+                ],
             ],
             [
                 'key'         => 'update_ketersediaan_tidur',
@@ -138,6 +153,18 @@ $modules = [
                     ['name' => 'tersediapria', 'type' => 'number', 'placeholder' => 'Tersedia untuk Pria', 'default' => ''],
                     ['name' => 'tersediawanita', 'type' => 'number', 'placeholder' => 'Tersedia untuk Wanita', 'default' => ''],
                     ['name' => 'tersediapriawanita', 'type' => 'number', 'placeholder' => 'Tersedia untuk Priawanita', 'default' => ''],
+                ],
+                'format'      => [
+                    'request' => json_encode([
+                        'kodekelas' => 'VIP',
+                        'koderuang' => 'RG01',
+                        'namaruang' => 'Ruang Anggrek VIP',
+                        'kapasitas' => '20',
+                        'tersedia' => '10',
+                        'tersediapria' => '0',
+                        'tersediawanita' => '0',
+                        'tersediapriawanita' => '0'
+                    ], JSON_PRETTY_PRINT),
                 ],
             ],
             [
@@ -159,6 +186,18 @@ $modules = [
                     ['name' => 'tersediawanita', 'type' => 'number', 'placeholder' => 'Tersedia untuk Wanita', 'default' => ''],
                     ['name' => 'tersediapriawanita', 'type' => 'number', 'placeholder' => 'Tersedia untuk Priawanita', 'default' => ''],
                 ],
+                'format'      => [
+                    'request' => json_encode([
+                        'kodekelas' => 'VIP',
+                        'koderuang' => 'RG01',
+                        'namaruang' => 'Ruang Anggrek VIP',
+                        'kapasitas' => '20',
+                        'tersedia' => '10',
+                        'tersediapria' => '0',
+                        'tersediawanita' => '0',
+                        'tersediapriawanita' => '0'
+                    ], JSON_PRETTY_PRINT),
+                ],
             ],
             [
                 'key'         => 'ketersediaan_kamar',
@@ -170,6 +209,25 @@ $modules = [
                     ['name' => 'kodeppk', 'type' => 'text', 'placeholder' => 'Kode PPK', 'default' => ''],
                     ['name' => 'start', 'type' => 'number', 'placeholder' => 'Start (default: 1)', 'default' => '1'],
                     ['name' => 'limit', 'type' => 'number', 'placeholder' => 'Limit (default: 10)', 'default' => '10'],
+                ],
+                'format'      => [
+                    'response' => json_encode([
+                        'metadata' => [
+                            'code' => 1,
+                            'message' => 'OK'
+                        ],
+                        'response' => [
+                            'list' => [
+                                [
+                                    'kodekelas' => 'VIP',
+                                    'koderuang' => 'RG01',
+                                    'namaruang' => 'Ruang Anggrek VIP',
+                                    'kapasitas' => '20',
+                                    'tersedia' => '10'
+                                ]
+                            ]
+                        ]
+                    ], JSON_PRETTY_PRINT),
                 ],
             ],
             [
@@ -184,6 +242,12 @@ $modules = [
                 'body'        => [
                     ['name' => 'kodekelas', 'type' => 'text', 'placeholder' => 'Kode Kelas (misal: VIP)', 'default' => ''],
                     ['name' => 'koderuang', 'type' => 'text', 'placeholder' => 'Kode Ruangan (misal: RG01)', 'default' => ''],
+                ],
+                'format'      => [
+                    'request' => json_encode([
+                        'kodekelas' => 'VIP',
+                        'koderuang' => 'RG01'
+                    ], JSON_PRETTY_PRINT),
                 ],
             ],
         ],
@@ -2292,11 +2356,26 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
             // Reload page to apply new mode
             window.location.reload();
         }
+
+        // Copy format to clipboard
+        function copyFormat(button) {
+            const pre = button.closest('.bg-slate-800/60').querySelector('code');
+            const text = pre.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = button.innerHTML;
+                button.innerHTML = '<svg class="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Tersalin!';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                }, 2000);
+            });
+        }
     </script>
     <style>
         .sidebar-scroll::-webkit-scrollbar { width: 4px; }
         .sidebar-scroll::-webkit-scrollbar-track { background: #1e293b; }
         .sidebar-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .light-theme .sidebar-scroll::-webkit-scrollbar-track { background: #e2e8f0; }
+        .light-theme .sidebar-scroll::-webkit-scrollbar-thumb { background: #94a3b8; }
         .method-get    { color: #22c55e; }
         .method-post   { color: #3b82f6; }
         .method-put    { color: #f59e0b; }
@@ -2308,9 +2387,70 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
         .badge-delete { background: #fee2e2; color: #991b1b; }
         .badge-patch  { background: #f3e8ff; color: #6b21a8; }
         pre { white-space: pre-wrap; word-break: break-all; }
+        
+        /* Light theme styles */
+        .light-theme {
+            background-color: #f1f5f9 !important;
+            color: #1e293b !important;
+        }
+        .light-theme .bg-slate-900 { background-color: #f8fafc !important; }
+        .light-theme .bg-slate-800 { background-color: #f1f5f9 !important; }
+        .light-theme .bg-slate-700 { background-color: #e2e8f0 !important; }
+        .light-theme .text-slate-100 { color: #1e293b !important; }
+        .light-theme .text-slate-200 { color: #1e293b !important; }
+        .light-theme .text-slate-300 { color: #334155 !important; }
+        .light-theme .text-slate-400 { color: #64748b !important; }
+        .light-theme .text-slate-500 { color: #64748b !important; }
+        .light-theme .text-slate-600 { color: #94a3b8 !important; }
+        .light-theme .border-slate-700 { border-color: #e2e8f0 !important; }
+        .light-theme .border-slate-600 { border-color: #cbd5e1 !important; }
+        .light-theme .bg-bpjs-700 { background-color: #0047e6 !important; }
+        .light-theme .text-bpjs-100 { color: #b3c9ff !important; }
+        .light-theme .text-bpjs-200 { color: #80a2ff !important; }
+        .light-theme .text-bpjs-300 { color: #4d7bff !important; }
+        .light-theme .bg-bpjs-600 { background-color: #1a5cff !important; }
+        .light-theme .text-white { color: #ffffff !important; }
+        .light-theme .text-green-400 { color: #16a34a !important; }
+        .light-theme .text-amber-400 { color: #d97706 !important; }
+        .light-theme .bg-white\/20 { background-color: #ffffff33 !important; }
+        .light-theme .text-bpjs-500\/30 { color: #0047e64d !important; }
+        .light-theme .bg-bpjs-500\/30 { background-color: #0047e64d !important; }
+        .light-theme .border-bpjs-400\/50 { border-color: #1a5cff80 !important; }
+        .light-theme .border-bpjs-400\/40 { border-color: #1a5cff66 !important; }
+        .light-theme .bg-bpjs-600\/40 { background-color: #1a5cff66 !important; }
+        .light-theme .shadow-bpjs-900\/30 { box-shadow: 0 10px 15px -3px #000f1a4d, 0 4px 6px -2px #000f1a1a !important; }
+        .light-theme .shadow-bpjs-900\/40 { box-shadow: 0 10px 15px -3px #000f1a66, 0 4px 6px -2px #000f1a20 !important; }
+        .light-theme .bg-slate-800\/50 { background-color: #f1f5f980 !important; }
+        .light-theme .bg-slate-700\/60 { background-color: #e2e8f099 !important; }
+        .light-theme .bg-slate-700\/30 { background-color: #e2e8f04d !important; }
+        .light-theme .bg-slate-700\/50 { background-color: #e2e8f080 !important; }
+        .light-theme .bg-red-900\/30 { background-color: #fef2f2 !important; }
+        .light-theme .border-red-700 { border-color: #fecaca !important; }
+        .light-theme .text-red-400 { color: #dc2626 !important; }
+        .light-theme .text-red-300 { color: #dc2626 !important; }
+        .light-theme .bg-green-900\/40 { background-color: #f0fdf4 !important; }
+        .light-theme .border-green-700 { border-color: #bbf7d0 !important; }
+        .light-theme .text-green-400 { color: #16a34a !important; }
+        .light-theme .bg-yellow-900\/40 { background-color: #fefce8 !important; }
+        .light-theme .border-yellow-700 { border-color: #fef08a !important; }
+        .light-theme .text-yellow-400 { color: #ca8a04 !important; }
+        .light-theme input, .light-theme select, .light-theme textarea {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+        }
+        .light-theme .placeholder-slate-500::placeholder { color: #94a3b8 !important; }
+        .light-theme .hover\:bg-slate-700:hover { background-color: #e2e8f0 !important; }
+        .light-theme .hover\:text-slate-200:hover { color: #1e293b !important; }
+        .light-theme .hover\:text-bpjs-200:hover { color: #80a2ff !important; }
+        .light-theme .hover\:text-bpjs-100:hover { color: #b3c9ff !important; }
+        .light-theme .hover\:bg-slate-700\/60:hover { background-color: #e2e8f099 !important; }
+        .light-theme .hover\:border-slate-600:hover { border-color: #cbd5e1 !important; }
+        .light-theme pre { color: #334155 !important; }
+        .light-theme code { color: #334155 !important; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex flex-col">
+<body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex flex-col transition-colors duration-300 dark-theme" id="body">
 
     <!-- ===== TOP HEADER ===== -->
     <header class="bg-bpjs-700 border-b border-bpjs-500 px-6 py-3 flex items-center justify-between flex-shrink-0">
@@ -2351,6 +2491,14 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
             <div class="text-right">
                 <p class="text-xs text-bpjs-100">Environment</p>
                 <p class="text-green-400 text-sm font-semibold">● Production</p>
+            </div>
+            <div class="w-px h-8 bg-bpjs-500"></div>
+            <div class="text-right">
+                <p class="text-xs text-bpjs-100">Theme</p>
+                <button onclick="toggleTheme()" id="themeToggle" class="flex items-center gap-1.5 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                    <span id="themeIcon">🌙</span>
+                    <span id="themeText">Dark</span>
+                </button>
             </div>
         </div>
     </header>
@@ -2531,6 +2679,30 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
                                 <span class="text-slate-500"><?= rtrim($activeModule['base_url'], '/') ?></span><?= $selectedSubData['path'] ?>
                             </div>
                         </div>
+
+                        <!-- ===== FORMAT CONTOH ===== -->
+                        <?php if (!empty($selectedSubData['format'])): ?>
+                            <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                                        <span>📋</span> Format Contoh
+                                    </h4>
+                                    <button type="button" onclick="copyFormat(this)" class="text-xs text-bpjs-300 hover:text-bpjs-200 flex items-center gap-1 px-2 py-1 bg-slate-700/50 rounded">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                        Salin
+                                    </button>
+                                </div>
+                                <?php
+                                $formatData = $selectedSubData['format'];
+                                $formatJson = isset($formatData['request']) ? $formatData['request'] : (isset($formatData['response']) ? $formatData['response'] : '');
+                                ?>
+                                <?php if ($formatJson): ?>
+                                    <pre class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto"><code class="format-code"><?= htmlspecialchars($formatJson) ?></code></pre>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
 
                         <!-- ===== REQUEST BUILDER ===== -->
                         <form method="POST" action="" class="space-y-4">
@@ -2807,6 +2979,61 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
 
         // Restore form data on page load
         document.addEventListener('DOMContentLoaded', restoreFormData);
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            const isDark = document.body.classList.contains('dark-theme');
+            const newTheme = isDark ? 'light' : 'dark';
+            
+            // Set cookie for 30 days
+            const d = new Date();
+            d.setTime(d.getTime() + (30 * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + d.toUTCString();
+            document.cookie = "bpjs_theme=" + newTheme + ";" + expires + ";path=/";
+            
+            applyTheme(newTheme);
+        }
+
+        function applyTheme(theme) {
+            const body = document.getElementById('body');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+            
+            if (theme === 'light') {
+                body.classList.remove('dark-theme');
+                body.classList.add('light-theme');
+                body.classList.remove('bg-slate-900', 'text-slate-200');
+                body.classList.add('bg-slate-100', 'text-slate-800');
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+            } else {
+                body.classList.remove('light-theme');
+                body.classList.add('dark-theme');
+                body.classList.remove('bg-slate-100', 'text-slate-800');
+                body.classList.add('bg-slate-900', 'text-slate-200');
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+            }
+        }
+
+        // Check for saved theme preference
+        function getSavedTheme() {
+            const cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                var parts = cookie.split('=');
+                if (parts[0] === 'bpjs_theme') {
+                    return parts[1];
+                }
+            }
+            return 'dark'; // Default to dark
+        }
+
+        // Apply saved theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = getSavedTheme();
+            applyTheme(savedTheme);
+        });
     </script>
 </body>
 </html>
