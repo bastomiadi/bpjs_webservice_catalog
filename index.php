@@ -2276,14 +2276,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 
     // Re-find selected module/sub for UI highlight
-    foreach ($modules as $mk => $mv) {
-        foreach ($mv['sub_modules'] as $sm) {
-            if ($sm['key'] === $subKey) {
-                $selectedMod = $mk;
-                $selectedSub = $subKey;
-                break 2;
+    // Only re-find if $selectedMod is not already set correctly
+    if ($selectedMod === null || !isset($modules[$selectedMod])) {
+        foreach ($modules as $mk => $mv) {
+            foreach ($mv['sub_modules'] as $sm) {
+                if ($sm['key'] === $subKey) {
+                    $selectedMod = $mk;
+                    $selectedSub = $subKey;
+                    break 2;
+                }
             }
         }
+    }
+    
+    // If we have module_key from POST, use it to get the correct module (fixes duplicate key issue)
+    if (isset($_POST['module_key']) && $_POST['module_key'] !== '' && isset($modules[$_POST['module_key']])) {
+        $selectedMod = $_POST['module_key'];
     }
 }
 
@@ -2401,23 +2409,23 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
         .light-theme .text-slate-300 { color: #334155 !important; }
         .light-theme .text-slate-400 { color: #64748b !important; }
         .light-theme .text-slate-500 { color: #64748b !important; }
-        .light-theme .text-slate-600 { color: #94a3b8 !important; }
+        .light-theme .text-slate-600 { color: #475569 !important; }
         .light-theme .border-slate-700 { border-color: #e2e8f0 !important; }
         .light-theme .border-slate-600 { border-color: #cbd5e1 !important; }
         .light-theme .bg-bpjs-700 { background-color: #0047e6 !important; }
-        .light-theme .text-bpjs-100 { color: #b3c9ff !important; }
-        .light-theme .text-bpjs-200 { color: #80a2ff !important; }
-        .light-theme .text-bpjs-300 { color: #4d7bff !important; }
-        .light-theme .bg-bpjs-600 { background-color: #1a5cff !important; }
+        .light-theme .text-bpjs-100 { color: #1e40af !important; }
+        .light-theme .text-bpjs-200 { color: #1d4ed8 !important; }
+        .light-theme .text-bpjs-300 { color: #2563eb !important; }
+        .light-theme .bg-bpjs-600 { background-color: #dc2626 !important; }
         .light-theme .text-white { color: #ffffff !important; }
         .light-theme .text-green-400 { color: #16a34a !important; }
         .light-theme .text-amber-400 { color: #d97706 !important; }
-        .light-theme .bg-white\/20 { background-color: #ffffff33 !important; }
-        .light-theme .text-bpjs-500\/30 { color: #0047e64d !important; }
-        .light-theme .bg-bpjs-500\/30 { background-color: #0047e64d !important; }
-        .light-theme .border-bpjs-400\/50 { border-color: #1a5cff80 !important; }
-        .light-theme .border-bpjs-400\/40 { border-color: #1a5cff66 !important; }
-        .light-theme .bg-bpjs-600\/40 { background-color: #1a5cff66 !important; }
+        .light-theme .bg-white\/20 { background-color: #ffffff !important; }
+        .light-theme .text-bpjs-500\/30 { color: #0047e6 !important; }
+        .light-theme .bg-bpjs-500\/30 { background-color: #0047e6 !important; }
+        .light-theme .border-bpjs-400\/50 { border-color: #0047e6 !important; }
+        .light-theme .border-bpjs-400\/40 { border-color: #0047e6 !important; }
+        .light-theme .bg-bpjs-600\/40 { background-color: #dc2626 !important; }
         .light-theme .shadow-bpjs-900\/30 { box-shadow: 0 10px 15px -3px #000f1a4d, 0 4px 6px -2px #000f1a1a !important; }
         .light-theme .shadow-bpjs-900\/40 { box-shadow: 0 10px 15px -3px #000f1a66, 0 4px 6px -2px #000f1a20 !important; }
         .light-theme .bg-slate-800\/50 { background-color: #f1f5f980 !important; }
@@ -2448,6 +2456,243 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
         .light-theme .hover\:border-slate-600:hover { border-color: #cbd5e1 !important; }
         .light-theme pre { color: #334155 !important; }
         .light-theme code { color: #334155 !important; }
+        /* Active module endpoint link styles */
+        .light-theme .bg-bpjs-500\/30 {
+            background-color: #0047e64d !important;
+        }
+        .light-theme .text-bpjs-100 {
+            color: #1e40af !important;
+        }
+        .light-theme .border-bpjs-400\/40 {
+            border-color: #0047e666 !important;
+        }
+        /* Description text in light mode */
+        .light-theme .text-slate-600.mt-1 {
+            color: #475569 !important;
+        }
+        /* Response body pre element */
+        .light-theme pre#responseBody {
+            background-color: #f8fafc !important;
+            color: #334155 !important;
+            border: 1px solid #e2e8f0 !important;
+        }
+        /* Header in light mode */
+        .light-theme header {
+            background-color: #ffffff !important;
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme header.bg-bpjs-700 {
+            background-color: #ffffff !important;
+        }
+        .light-theme header .bg-bpjs-700 {
+            background-color: #ffffff !important;
+        }
+        .light-theme header.border-bpjs-500 {
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme header .border-bpjs-500 {
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme header .bg-white {
+            background-color: #f8fafc !important;
+        }
+        .light-theme header .text-bpjs-700 {
+            color: #1e40af !important;
+        }
+        /* Header logo box in light mode */
+        .light-theme header .bg-white.rounded-lg {
+            background-color: #f1f5f9 !important;
+        }
+        .light-theme header .text-bpjs-700.font-bold {
+            color: #1e40af !important;
+        }
+        /* Header text in light mode */
+        .light-theme header .text-bpjs-100 {
+            color: #1e40af !important;
+        }
+        .light-theme header .text-white {
+            color: #1e293b !important;
+        }
+        .light-theme header .text-slate-400 {
+            color: #475569 !important;
+        }
+        .light-theme header .text-green-400 {
+            color: #16a34a !important;
+        }
+        /* Header h1 in light mode */
+        .light-theme header h1.text-white.font-bold.text-lg.leading-tight {
+            color: #1e293b !important;
+        }
+        /* Header p.text-bpjs-100 in light mode */
+        .light-theme header p.text-xs.text-bpjs-100 {
+            color: #1e40af !important;
+        }
+        /* Header Cons ID text in light mode */
+        .light-theme header .text-right.p-2 .text-xs.text-bpjs-100,
+        .light-theme header .text-right .text-xs.text-bpjs-100 {
+            color: #1e40af !important;
+        }
+        /* Header Cons ID value in light mode */
+        .light-theme header .text-white.text-sm.font-mono.font-semibold {
+            color: #1e293b !important;
+        }
+        /* Theme toggle button in light mode */
+        .light-theme #themeToggle {
+            color: #475569 !important;
+        }
+        .light-theme #themeToggle:hover {
+            color: #1e293b !important;
+        }
+        /* Header select dropdown in light mode */
+        .light-theme header select {
+            background-color: #f1f5f9 !important;
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+        }
+        .light-theme header select option {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+        }
+        /* Header dividers */
+        .light-theme header .w-px.h-8.bg-bpjs-500 {
+            background-color: #e2e8f0 !important;
+        }
+        /* Module header in light mode */
+        .light-theme .bg-gradient-to-r.from-bpjs-700.to-bpjs-600 {
+            background: linear-gradient(to right, #ffffff, #f8fafc) !important;
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme .bg-gradient-to-r.from-bpjs-700.to-bpjs-600 .text-white {
+            color: #1e293b !important;
+        }
+        .light-theme .bg-gradient-to-r.from-bpjs-700.to-bpjs-600 .text-bpjs-100 {
+            color: #1e40af !important;
+        }
+        .light-theme .bg-gradient-to-r.from-bpjs-700.to-bpjs-600 .text-bpjs-200 {
+            color: #2563eb !important;
+        }
+        .light-theme .bg-gradient-to-r.from-bpjs-700.to-bpjs-600 .bg-white\/20 {
+            background-color: #f1f5f9 !important;
+            color: #1e293b !important;
+        }
+        /* Sidebar in light mode */
+        .light-theme aside {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme .bg-slate-800 {
+            background-color: #f1f5f9 !important;
+        }
+        .light-theme .border-slate-700 {
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme .text-slate-300 {
+            color: #475569 !important;
+        }
+        .light-theme .text-slate-400 {
+            color: #64748b !important;
+        }
+        .light-theme .text-slate-500 {
+            color: #94a3b8 !important;
+        }
+        .light-theme .bg-slate-700 {
+            background-color: #e2e8f0 !important;
+        }
+        .light-theme .bg-slate-900 {
+            background-color: #f8fafc !important;
+        }
+        .light-theme .bg-slate-600 {
+            background-color: #cbd5e1 !important;
+        }
+        .light-theme .hover\:bg-slate-700:hover {
+            background-color: #e2e8f0 !important;
+        }
+        .light-theme .hover\:text-slate-200:hover {
+            color: #1e293b !important;
+        }
+        /* Sidebar search input in light mode */
+        .light-theme input#sidebarSearch {
+            background-color: #ffffff !important;
+            color: #1e293b !important;
+            border-color: #cbd5e1 !important;
+            placeholder-color: #94a3b8 !important;
+        }
+        /* Sidebar footer in light mode */
+        .light-theme .text-slate-500.text-center {
+            color: #64748b !important;
+        }
+        /* Main content in light mode */
+        .light-theme main {
+            background-color: #f8fafc !important;
+        }
+        /* Endpoint list header in light mode */
+        .light-theme h3.text-xs.font-bold.text-slate-500.uppercase.tracking-wider.mb-3 {
+            color: #64748b !important;
+        }
+        /* Endpoint item in light mode */
+        .light-theme .text-slate-400.hover\:bg-slate-700\/60:hover {
+            color: #475569 !important;
+            background-color: #e2e8f0 !important;
+        }
+        /* Module count badge in light mode */
+        .light-theme .text-xs.bg-slate-700.text-slate-400 {
+            background-color: #e2e8f0 !important;
+            color: #64748b !important;
+        }
+        /* Endpoints count badge in light mode */
+        .light-theme .bg-white\/20.text-white.text-xs.px-3.py-1.rounded-full {
+            background-color: #f1f5f9 !important;
+            color: #1e293b !important;
+        }
+        /* Form container in light mode */
+        .light-theme .bg-slate-800\/60.border-slate-700.rounded-xl {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+        }
+        /* Form section header in light mode */
+        .light-theme .text-sm.font-bold.text-slate-300 {
+            color: #475569 !important;
+        }
+        .light-theme .text-sm.font-bold.text-slate-300 span {
+            color: #475569 !important;
+        }
+        /* Form labels in light mode */
+        .light-theme .block.text-xs.text-slate-400.mb-1.font-mono {
+            color: #475569 !important;
+        }
+        /* Form inputs in light mode */
+        .light-theme .bg-slate-900.border-slate-600.rounded-lg.px-3.py-2.text-sm.text-slate-200 {
+            background-color: #ffffff !important;
+            border-color: #cbd5e1 !important;
+            color: #1e293b !important;
+        }
+        .light-theme .bg-slate-900.border-slate-600.rounded-lg.px-3.py-2.text-sm.text-slate-200::placeholder {
+            color: #94a3b8 !important;
+        }
+        /* Form body container in light mode */
+        .light-theme .bg-slate-800\/30.border-slate-700.rounded-xl.p-4 {
+            background-color: #f8fafc !important;
+            border-color: #e2e8f0 !important;
+        }
+        .light-theme .text-xs.text-slate-300 {
+            color: #475569 !important;
+        }
+        /* Debug info section in light mode */
+        .light-theme .text-amber-400.mb-3 {
+            color: #ca8a04 !important;
+        }
+        .light-theme .text-xs.text-slate-400 {
+            color: #64748b !important;
+        }
+        /* Request body container in light mode */
+        .light-theme .bg-slate-800\/50.border-slate-700.rounded-xl.p-4 {
+            background-color: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+        }
+        /* Response section in light mode */
+        .light-theme .text-xs.text-slate-400.mt-3 {
+            color: #64748b !important;
+        }
     </style>
 </head>
 <body class="bg-slate-900 text-slate-200 h-screen overflow-hidden flex flex-col transition-colors duration-300 dark-theme" id="body">
