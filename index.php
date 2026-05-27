@@ -2457,8 +2457,9 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
         .light-theme .text-bpjs-200 { color: #1d4ed8 !important; }
         .light-theme .text-bpjs-300 { color: #2563eb !important; }
         .light-theme .bg-bpjs-600 { background-color: #dc2626 !important; }
-        .light-theme .text-white { color: #ffffff !important; }
+        .light-theme .text-white { color: #1e293b !important; }
         .light-theme .text-green-400 { color: #16a34a !important; }
+        .light-theme .bg-slate-800\/60 { background-color: #f1f5f999 !important; }
         .light-theme .text-amber-400 { color: #d97706 !important; }
         .light-theme .bg-white\/20 { background-color: #ffffff !important; }
         .light-theme .text-bpjs-500\/30 { color: #0047e6 !important; }
@@ -2614,6 +2615,13 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
         .light-theme .bg-gradient-to-r.from-bpjs-700.to-bpjs-600 .bg-white\/20 {
             background-color: #f1f5f9 !important;
             color: #1e293b !important;
+        }
+        /* Submit button in light mode */
+        .light-theme .bg-gradient-to-r.from-bpjs-600.to-bpjs-500 {
+            background: linear-gradient(to right, #dc2626, #ef4444) !important;
+        }
+        .light-theme .bg-gradient-to-r.from-bpjs-600.to-bpjs-500:hover {
+            background: linear-gradient(to right, #ef4444, #f85a5a) !important;
         }
         /* Sidebar in light mode */
         .light-theme aside {
@@ -3073,7 +3081,7 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
                             <!-- Send Button -->
                             <button
                                 type="submit"
-                                class="w-full bg-gradient-to-r from-bpjs-500 to-bpjs-400 hover:from-bpjs-400 hover:to-bpjs-300 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-bpjs-900/40 transition-all flex items-center justify-center gap-2"
+                                class="w-full bg-gradient-to-r from-bpjs-600 to-bpjs-500 hover:from-bpjs-500 hover:to-bpjs-400 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-bpjs-900/40 transition-all flex items-center justify-center gap-2"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
