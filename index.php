@@ -70,7 +70,7 @@ function getBaseUrl($moduleKey, $currentDomain, $isDevMode) {
         'antrean_fktp' => '/antreanfktp',
         'apotek' => '/apotek-rest',
         'pcare' => '/pcare-rest',
-        'icare' => '/ihs',
+        'icare' => '/wsihs',
         'ws_rekam_medis' => '/erekammedis',
         'aplicares' => '/aplicaresws/rest',
     ];
@@ -2133,6 +2133,7 @@ $modules = [
                 'label'       => 'FKRTL Validate',
                 'method'      => 'POST',
                 'path'        => '/api/rs/validate',
+                //'path'        => '',
                 'description' => 'API Data Riwayat Pelayanan - FKRTL (Fasilitas Kesehatan Rumah Sakit)',
                 'body'        => [
                     ['name' => 'param', 'type' => 'text', 'placeholder' => 'Nomor Kartu (misal: 2200009338321)', 'default' => ''],
@@ -2197,6 +2198,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $params = is_array($rawParams) ? $rawParams : (json_decode($rawParams, true) ?: []);
     $body   = is_array($rawBody)   ? $rawBody   : (json_decode($rawBody,   true) ?: []);
+
+    /**
+     * Transform serializeArray() format
+     * [
+     *   ['name'=>'param','value'=>'xxx']
+     * ]
+     * menjadi:
+     * [
+     *   'param'=>'xxx'
+     * ]
+     */
+    if ($moduleKey === 'icare' && $subKey === 'fkrtl_validate') {
+
+        $formattedBody = [];
+
+        foreach ($body as $item) {
+
+            if (!isset($item['name'])) {
+                continue;
+            }
+
+            $name  = $item['name'];
+            $value = $item['value'] ?? '';
+
+            // khusus kodedokter harus integer
+            if ($name === 'kodedokter') {
+                $formattedBody[$name] = (int)$value;
+            } else {
+                $formattedBody[$name] = trim($value);
+            }
+        }
+
+        // khusus param -> numeric only
+        if (isset($formattedBody['param'])) {
+            $formattedBody['param'] = preg_replace('/\D/', '', $formattedBody['param']);
+        }
+
+        $body = $formattedBody;
+    }
 
     // ── Validate required path params before building URL ──
     $missingParams = [];
