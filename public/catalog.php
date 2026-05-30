@@ -570,17 +570,30 @@ include __DIR__ . '/inc/header.php';
                                 $httpCode  = $metaData['code']    ?? 'N/A';
                                 $httpMsg   = $metaData['message'] ?? '';
                                 $isNumeric = is_numeric($httpCode);
+                                
+                                // BPJS API success: code 1 (success) or HTTP 2xx
+                                // BPJS API error: code 0 or other values
+                                $isSuccess = $isNumeric && ($httpCode == 1 || ($httpCode >= 200 && $httpCode < 300));
+                                $isError = $isNumeric && ($httpCode == 0 || $httpCode >= 400);
+                                
                                 $codeClass = $isNumeric
-                                    ? (($httpCode >= 200 && $httpCode < 300) ? 'green'
-                                        : (($httpCode >= 400 && $httpCode < 500) ? 'yellow' : 'red'))
+                                    ? ($isSuccess ? 'green'
+                                        : ($httpCode >= 400 && $httpCode < 500 ? 'yellow' : 'red'))
                                     : 'slate';
                                 ?>
                                 <div class="flex items-center gap-3 mb-3 flex-wrap">
-                                    <span class="bg-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-50 border border-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-200 text-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-700 text-xs font-bold px-2.5 py-1 rounded-lg">
+                                    <span class="bg-<?= $codeClass ?>-50 border border-<?= $codeClass ?>-200 text-<?= $codeClass ?>-700 text-xs font-bold px-2.5 py-1 rounded-lg">
                                         HTTP <?= htmlspecialchars($httpCode) ?>
                                     </span>
                                     <span class="text-gray-500 text-sm"><?= htmlspecialchars($httpMsg) ?></span>
-                                    <?php if (!$isNumeric || $httpCode < 200 || $httpCode >= 400): ?>
+                                    <?php if ($isSuccess): ?>
+                                        <div class="flex items-center gap-1 text-green-600">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-xs font-semibold">Sukses</span>
+                            </div>
+                                    <?php elseif ($isError): ?>
                                         <div class="flex items-center gap-1">
                                 <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856a1 1 0 00.883-.5 1 1 0 00.097-1.416L12 12.25"/>
