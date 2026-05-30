@@ -63,22 +63,47 @@ Toggle between development and production environments:
   - Aplicares: Uses production domain (no dev available)
 - API Version selector is disabled when Dev mode is active
 
+### 4. **Theme Toggle**
+- Dark/Light theme support
+- Cookie-based persistence (30 days)
+
+### 5. **Response Decryption**
+- Automatic LZString decompression
+- AES-256-CBC decryption for encrypted responses
+- Manual decrypt toggle for testing
+
 ## Project Structure
 
 ```
-bpjs/
-├── index.php              # Main application file
-├── README.md              # This documentation
+catalog_ws_bpjs/
+├── index.php                  # Landing page (module grid)
+├── catalog.php               # Main application (API testing interface)
+├── README.md                 # This documentation
+├── .env-demo                 # Environment variables template
 ├── config/
-│   └── env.php           # Configuration settings
+│   └── env.php              # Configuration loader
 ├── helpers/
-│   ├── bpjs_decrypt.php  # AES-256-CBC decryption
-│   ├── bpjs_request.php  # API request handler
-│   └── bpjs_signature.php # HMAC-SHA256 signature generator
+│   ├── bpjs_decrypt.php     # AES-256-CBC decryption
+│   ├── bpjs_request.php     # API request handler
+│   └── bpjs_signature.php   # HMAC-SHA256 signature generator
 ├── library/
-│   └── lz-string/        # String compression library
-└── assets/
-    └── bpjs-logo.png     # BPJS logo
+│   └── lz-string/           # String compression library
+├── public/
+│   ├── index.php            # Landing page entry point
+│   ├── catalog.php          # Main application entry point
+│   └── inc/
+│       ├── header.php       # Reusable header component
+│       └── footer.php       # Reusable footer component (sidebar + main content)
+└── app/
+    └── modules/             # BPJS API module definitions
+        ├── vclaim.php
+        ├── antrean_rs.php
+        ├── antrean_fktp.php
+        ├── apotek.php
+        ├── pcare.php
+        ├── icare.php
+        ├── ws_rekam_medis.php
+        └── aplicares.php
 ```
 
 ## Setup Instructions
@@ -91,7 +116,7 @@ bpjs/
 2. **Installation**
    ```bash
    # Clone or download the repository
-   cd /Applications/XAMPP/xamppfiles/htdocs/bpjs
+   cd /Applications/XAMPP/xamppfiles/htdocs/catalog_ws_bpjs
    
    # Install dependencies
    composer install
@@ -102,15 +127,14 @@ bpjs/
    - Configure your BPJS credentials in `.env`:
      ```
      BPJS_CONS_ID=your_consumer_id
-     BPJS_CONS_KEY=your_consumer_secret
+     BPJS_SECRET_KEY=your_consumer_secret
      BPJS_USER_KEY=your_user_key
-     BPJS_PASSWORD=your_password
      ```
 
 4. **Running the Application**
    - Start Apache and MySQL from XAMPP
-   - Place the project in `htdocs/bpjs`
-   - Access via browser: `http://localhost/bpjs`
+   - Place the project in `htdocs/catalog_ws_bpjs`
+   - Access via browser: `http://localhost/catalog_ws_bpjs/public/index.php`
 
 ## API Authentication
 
@@ -198,6 +222,26 @@ Sub-modules:
 - BC
 - COB
 - ASKES
+
+## Code Architecture
+
+### Reusable Components
+
+The application uses a modular architecture with reusable components:
+
+- **`public/inc/header.php`**: Contains HTML head, CSS styles, JavaScript functions, and top header
+  - Configurable via PHP variables
+  - Supports dynamic title, Cons ID display, mode/version/theme toggles
+  
+- **`public/inc/footer.php`**: Contains sidebar navigation and main content wrapper
+  - Configurable sidebar display
+  - Module navigation with search
+  - Form persistence via localStorage
+
+### Entry Points
+
+- **`public/index.php`**: Landing page showing module grid (no header controls)
+- **`public/catalog.php`**: Full application with sidebar and API testing interface
 
 ## Security Notes
 

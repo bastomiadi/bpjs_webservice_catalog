@@ -1,0 +1,760 @@
+<?php
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+/*
+|--------------------------------------------------------------------------
+| INITIAL SETUP
+|--------------------------------------------------------------------------
+*/
+
+$basePath = __DIR__ . '/..';
+
+// Load library
+foreach (glob($basePath . '/library/lz-string/src/LZCompressor/*.php') as $file) {
+    require_once $file;
+}
+
+// Load core files
+require_once $basePath . '/config/env.php';
+require_once $basePath . '/helpers/bpjs_signature.php';
+require_once $basePath . '/helpers/bpjs_request.php';
+require_once $basePath . '/helpers/bpjs_decrypt.php';
+loadEnv($basePath . '/.env');
+
+// Credentials
+$consId    = $_ENV['BPJS_CONS_ID'] ?? '';
+$secretKey = $_ENV['BPJS_SECRET_KEY'] ?? '';
+$userKey   = $_ENV['BPJS_USER_KEY'] ?? '';
+
+// API Domain Configuration
+$isDevMode        = isset($_GET['dev_mode']) ? ($_GET['dev_mode'] === 'true') : (($_COOKIE['bpjs_dev_mode'] ?? 'false') === 'true');
+$apiDomainVersion = isset($_GET['api_version']) ? $_GET['api_version'] : (($_COOKIE['bpjs_api_version'] ?? 'v1'));
+
+$prodDomainMap = ['v1' => 'apijkn.bpjs-kesehatan.go.id', 'v2' => 'new-apijkn.bpjs-kesehatan.go.id'];
+$currentDomain = $isDevMode ? 'apijkn-dev.bpjs-kesehatan.go.id' : ($prodDomainMap[$apiDomainVersion] ?? $prodDomainMap['v1']);
+
+/*
+|--------------------------------------------------------------------------
+| HELPER FUNCTIONS
+|--------------------------------------------------------------------------
+*/
+
+function getBaseUrl($moduleKey, $currentDomain, $isDevMode) {
+    $prodPaths = [
+        'vclaim' => '/vclaim-rest', 'antrean_rs' => '/antreanrs', 'antrean_fktp' => '/antreanfktp',
+        'apotek' => '/apotek-rest', 'pcare' => '/pcare-rest', 'icare' => '/wsihs',
+        'ws_rekam_medis' => '/erekammedis', 'aplicares' => '/aplicaresws/rest',
+    ];
+
+    $devDomains = [
+        'vclaim' => 'apijkn-dev.bpjs-kesehatan.go.id/vclaim-rest-dev',
+        'antrean_rs' => 'apijkn-dev.bpjs-kesehatan.go.id/antreanrs_dev',
+        'antrean_fktp' => 'apijkn-dev.bpjs-kesehatan.go.id/antreanfktp_dev',
+        'apotek' => 'apijkn-dev.bpjs-kesehatan.go.id/apotek-rest-dev',
+        'pcare' => 'apijkn-dev.bpjs-kesehatan.go.id/pcare-rest-dev',
+        'icare' => 'apijkn-dev.bpjs-kesehatan.go.id/ihs_dev',
+        'ws_rekam_medis' => 'apijkn-dev.bpjs-kesehatan.go.id/erekammedis_dev',
+    ];
+
+    if ($moduleKey === 'aplicares') {
+        return $isDevMode
+            ? 'https://apijkn.bpjs-kesehatan.go.id/aplicaresws/rest'
+            : 'https://' . $currentDomain . ($prodPaths[$moduleKey] ?? '');
+    }
+
+    return $isDevMode && isset($devDomains[$moduleKey])
+        ? 'https://' . $devDomains[$moduleKey]
+        : 'https://' . $currentDomain . ($prodPaths[$moduleKey] ?? '');
+}
+
+/*
+|--------------------------------------------------------------------------
+| LOAD MODULES
+|--------------------------------------------------------------------------
+*/
+
+$modules = [];
+foreach (glob($basePath . '/app/modules/*.php') as $file) {
+    $moduleKey = basename($file, '.php');
+    $moduleData = require_once $file;
+    is_array($moduleData) && $modules[$moduleKey] = $moduleData;
+}
+
+/*
+|--------------------------------------------------------------------------
+| HANDLE API REQUEST
+|--------------------------------------------------------------------------
+*/
+
+$apiResponse  = null;
+$apiError     = '';
+$selectedSub  = null;
+$selectedMod  = null;
+$debugInfo    = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send_request') {
+    $debugInfo['POST'] = $_POST;
+
+    $moduleKey  = $_POST['module_key']  ?? '';
+    $subKey     = $_POST['sub_key']     ?? '';
+    $method     = strtoupper($_POST['method'] ?? 'GET');
+    $path       = $_POST['path']        ?? '';
+    $baseUrl    = $_POST['base_url']    ?? '';
+    $rawParams  = $_POST['params']      ?? '{}';
+    $rawBody    = $_POST['body']        ?? '{}';
+    $decrypt    = isset($_POST['decrypt']) && $_POST['decrypt'] === '1';
+
+    $params = is_array($rawParams) ? $rawParams : (json_decode($rawParams, true) ?: []);
+    $body   = is_array($rawBody)   ? $rawBody   : (json_decode($rawBody,   true) ?: []);
+
+    /**
+     * Transform serializeArray() format
+     * [
+     *   ['name'=>'param','value'=>'xxx']
+     * ]
+     * menjadi:
+     * [
+     *   'param'=>'xxx'
+     * ]
+     */
+    if ($moduleKey === 'icare' && $subKey === 'fkrtl_validate') {
+
+        $formattedBody = [];
+
+        foreach ($body as $item) {
+
+            if (!isset($item['name'])) {
+                continue;
+            }
+
+            $name  = $item['name'];
+            $value = $item['value'] ?? '';
+
+            // khusus kodedokter harus integer
+            if ($name === 'kodedokter') {
+                $formattedBody[$name] = (int)$value;
+            } else {
+                $formattedBody[$name] = trim($value);
+            }
+        }
+
+        // khusus param -> numeric only
+        if (isset($formattedBody['param'])) {
+            $formattedBody['param'] = preg_replace('/\D/', '', $formattedBody['param']);
+        }
+
+        $body = $formattedBody;
+    }
+
+    // ── Validate required path params before building URL ──
+    $missingParams = [];
+    foreach ($params as $p) {
+        if (strpos($path, '{' . $p['name'] . '}') !== false && empty(trim($p['value'] ?? ''))) {
+            $missingParams[] = $p['name'];
+        }
+    }
+    if (!empty($missingParams)) {
+        $apiError  = 'Parameter wajib belum diisi: ' . implode(', ', $missingParams);
+        $apiResponse = null;
+        $debugInfo['missing_params'] = $missingParams;
+    } else {
+        $debugInfo['params'] = $params;
+
+        // Build URL with path params
+        $url = rtrim($baseUrl, '/') . $path;
+        foreach ($params as $p) {
+            $url = str_replace('{' . $p['name'] . '}', urlencode($p['value'] ?? ''), $url);
+        }
+
+        // Build query string from remaining (non-path) params
+        $queryParams = [];
+        foreach ($params as $p) {
+            if (strpos($path, '{' . $p['name'] . '}') === false && !empty(trim($p['value'] ?? ''))) {
+                $queryParams[$p['name']] = $p['value'];
+            }
+        }
+        if (!empty($queryParams)) {
+            $url .= '?' . http_build_query($queryParams);
+        }
+
+        $debugInfo['url'] = $url;
+        $debugInfo['method'] = $method;
+
+        $auth = generateSignature($consId, $secretKey);
+
+        $requestConfig = [
+            'url'       => $url,
+            'method'    => $method,
+            'cons_id'   => $consId,
+            'timestamp' => $auth['timestamp'],
+            'signature' => $auth['signature'],
+            'user_key'  => $userKey,
+        ];
+
+        if (!empty($body) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
+            $requestConfig['body'] = $body;
+        }
+
+        $response = bpjsRequest($requestConfig);
+        $debugInfo['bpjs_response'] = $response;
+
+        if (!$response['status']) {
+            $apiError  = $response['message'] ?? 'Unknown error';
+            $apiResponse = null;
+        } else {
+            $apiResponse = $response['data'];
+            
+            // Check if the response is HTML (error page)
+            $rawResponse = $response['raw_response'] ?? null;
+            if ($rawResponse && (strpos($rawResponse, '<html>') !== false || strpos($rawResponse, '<!DOCTYPE') !== false)) {
+                $apiError = 'API returned HTML error. Possible causes: wrong endpoint URL, invalid credentials, or API not available. Response: ' . htmlspecialchars(substr($rawResponse, 0, 500));
+                $apiResponse = null;
+            } elseif ($apiResponse && isset($apiResponse['response']) && is_string($apiResponse['response'])) {
+                // BPJS API returns encrypted data in the 'response' field
+                // Only decrypt if the decrypt checkbox is checked
+                if ($decrypt) {
+                    try {
+                        $apiResponse['response'] = decryptResponse($consId, $secretKey, $auth['timestamp'], $apiResponse['response']);
+                    } catch (\Exception $e) {
+                        $apiResponse['decrypt_error'] = 'Decrypt failed: ' . $e->getMessage();
+                    }
+                }
+            }
+        }
+    }
+
+    // Re-find selected module/sub for UI highlight
+    // Only re-find if $selectedMod is not already set correctly
+    if ($selectedMod === null || !isset($modules[$selectedMod])) {
+        foreach ($modules as $mk => $mv) {
+            foreach ($mv['sub_modules'] as $sm) {
+                if ($sm['key'] === $subKey) {
+                    $selectedMod = $mk;
+                    $selectedSub = $subKey;
+                    break 2;
+                }
+            }
+        }
+    }
+    
+    // If we have module_key from POST, use it to get the correct module (fixes duplicate key issue)
+    if (isset($_POST['module_key']) && $_POST['module_key'] !== '' && isset($modules[$_POST['module_key']])) {
+        $selectedMod = $_POST['module_key'];
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| ACTIVE MODULE / SUB (from GET or POST)
+|--------------------------------------------------------------------------
+*/
+
+if ($selectedMod === null) {
+    $selectedMod = $_POST['module'] ?? ($_GET['module']  ?? array_key_first($modules));
+}
+if ($selectedSub === null) {
+    $selectedSub = $_POST['sub']    ?? ($_GET['sub']     ?? null);
+}
+
+$activeModule = $modules[$selectedMod] ?? $modules[array_key_first($modules)];
+$activeSubs    = $activeModule['sub_modules'] ?? [];
+
+// Add icon and label to module if not present
+if (!isset($activeModule['icon'])) {
+    $activeModule['icon'] = '📁';
+}
+if (!isset($activeModule['label'])) {
+    $activeModule['label'] = $selectedMod;
+}
+
+// Set base_url for active module
+$activeModule['base_url'] = getBaseUrl($selectedMod, $currentDomain, $isDevMode);
+
+// Include header
+include __DIR__ . '/inc/header.php';
+?>
+
+    <!-- ===== MAIN LAYOUT ===== -->
+    <div class="flex flex-1 overflow-hidden">
+
+        <!-- ===== SIDEBAR ===== -->
+        <aside class="w-72 bg-slate-800 border-r border-slate-700 flex flex-col flex-shrink-0">
+
+            <!-- Search -->
+            <div class="p-3 border-b border-slate-700">
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                    <input
+                        type="text"
+                        id="sidebarSearch"
+                        placeholder="Cari modul / endpoint..."
+                        class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400"
+                    >
+                </div>
+            </div>
+
+            <!-- Module List -->
+            <nav class="flex-1 overflow-y-auto sidebar-scroll p-2 space-y-1" id="moduleNav">
+
+                <?php foreach ($modules as $modKey => $mod): ?>
+                    <?php
+                    $isActive   = ($modKey === $selectedMod);
+                    $subCount   = count($mod['sub_modules']);
+                    $expanded   = $isActive || $selectedSub !== null;
+                    // Add icon and label if not present
+                    $modIcon = $mod['icon'] ?? '📁';
+                    $modLabel = $mod['label'] ?? $modKey;
+                    ?>
+                    <div class="module-group" data-module="<?= $modKey ?>">
+
+                        <!-- Module Header -->
+                        <button
+                            type="button"
+                            onclick="toggleModule('<?= $modKey ?>')"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors
+                                <?= $isActive ? 'bg-bpjs-600 text-white' : 'text-slate-300 hover:bg-slate-700' ?>"
+                        >
+                            <span class="text-lg flex-shrink-0"><?= $modIcon ?></span>
+                            <span class="flex-1 font-semibold text-sm truncate"><?= htmlspecialchars($modLabel) ?></span>
+                            <span class="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded-full flex-shrink-0"><?= $subCount ?></span>
+                            <svg id="arrow-<?= $modKey ?>" class="w-4 h-4 flex-shrink-0 transition-transform <?= $expanded ? 'rotate-90' : '' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+
+                        <!-- Sub-modules -->
+                        <div id="subs-<?= $modKey ?>" class="overflow-hidden transition-all duration-200 <?= $expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0' ?>">
+                            <div class="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-700 pl-2 pb-2">
+
+                                <?php foreach ($mod['sub_modules'] as $sub): ?>
+                                    <?php
+                                    $subActive = ($modKey === $selectedMod && $sub['key'] === $selectedSub);
+                                    ?>
+                                    <a
+                                        href="?module=<?= $modKey ?>&sub=<?= $sub['key'] ?>"
+                                        class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors
+                                            <?= $subActive
+                                                ? 'bg-bpjs-500/30 text-bpjs-100 border border-bpjs-400/40'
+                                                : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200' ?>"
+                                    >
+                                        <span class="method-<?= strtolower($sub['method']) ?> font-mono font-bold text-[10px] w-10 text-center flex-shrink-0">
+                                            <?= $sub['method'] ?>
+                                        </span>
+                                        <span class="truncate"><?= htmlspecialchars($sub['label']) ?></span>
+                                    </a>
+                                <?php endforeach; ?>
+
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+            </nav>
+
+            <!-- Sidebar Footer -->
+            <div class="p-3 border-t border-slate-700 text-[10px] text-slate-500 text-center">
+                BPJS Kesehatan API Catalog v1.0
+            </div>
+        </aside>
+
+        <!-- ===== MAIN CONTENT ===== -->
+        <main class="flex-1 overflow-y-auto bg-slate-900">
+
+            <!-- ===== MODULE HEADER ===== -->
+            <div class="bg-gradient-to-r from-bpjs-700 to-bpjs-600 px-8 py-6 border-b border-bpjs-500">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1">
+                            <span class="text-3xl"><?= $activeModule['icon'] ?></span>
+                            <h2 class="text-2xl font-bold text-white"><?= htmlspecialchars($activeModule['label']) ?></h2>
+                        </div>
+                        <p class="text-bpjs-100 text-sm"><?= htmlspecialchars($activeModule['description'] ?? '') ?></p>
+                        <p class="text-bpjs-200 text-xs mt-1 font-mono">
+                            Base URL: <span class="text-white"><?= htmlspecialchars($activeModule['base_url']) ?></span>
+                            <span class="ml-2 px-2 py-0.5 bg-bpjs-500/30 rounded text-[10px] text-bpjs-200"><?= strtoupper($apiDomainVersion) ?> API</span>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full">
+                            <?= count($activeModule['sub_modules']) ?> Endpoints
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex">
+
+                <!-- ===== ENDPOINT LIST (LEFT) ===== -->
+                <div class="w-80 border-r border-slate-700 overflow-y-auto sidebar-scroll flex-shrink-0" style="max-height: calc(100vh - 200px);">
+                    <div class="p-4">
+                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Daftar Endpoint</h3>
+                        <div class="space-y-1" id="endpointList">
+
+                            <?php foreach ($activeModule['sub_modules'] as $sub): ?>
+                                <?php
+                                $subActive = $sub['key'] === $selectedSub;
+                                ?>
+                                <button
+                                    type="button"
+                                    onclick="selectEndpoint('<?= $sub['key'] ?>')"
+                                    class="w-full text-left px-3 py-2.5 rounded-lg transition-all
+                                        <?= $subActive
+                                            ? 'bg-bpjs-600/40 border border-bpjs-400/50 shadow-lg shadow-bpjs-900/30'
+                                            : 'bg-slate-800/50 border border-transparent hover:bg-slate-700/60 hover:border-slate-600' ?>"
+                                >
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="badge-<?= strtolower($sub['method']) ?> text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
+                                            <?= $sub['method'] ?>
+                                        </span>
+                                        <span class="text-sm font-semibold text-slate-100 truncate"><?= htmlspecialchars($sub['label']) ?></span>
+                                    </div>
+                                    <p class="text-[11px] text-slate-500 font-mono truncate"><?= htmlspecialchars($sub['path']) ?></p>
+                                    <p class="text-[11px] text-slate-600 mt-1 line-clamp-2"><?= htmlspecialchars($sub['description'] ?? '') ?></p>
+                                </button>
+                            <?php endforeach; ?>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== REQUEST / RESPONSE PANEL (RIGHT) ===== -->
+                <div class="flex-1 overflow-y-auto p-6 space-y-5" style="max-height: calc(100vh - 200px);">
+
+                    <?php if ($selectedSub === null): ?>
+                        <!-- No endpoint selected -->
+                        <div class="flex flex-col items-center justify-center py-20 text-slate-500">
+                            <div class="text-6xl mb-4">📡</div>
+                            <p class="text-lg font-semibold">Pilih endpoint dari daftar di sebelah kiri</p>
+                            <p class="text-sm mt-1">Klik salah satu endpoint untuk mulai menguji API</p>
+                        </div>
+
+                    <?php else:
+                        // Find selected sub-module
+                        $selectedSubData = null;
+                        foreach ($activeModule['sub_modules'] as $sm) {
+                            if ($sm['key'] === $selectedSub) {
+                                $selectedSubData = $sm;
+                                break;
+                            }
+                        }
+                        if ($selectedSubData):
+                    ?>
+
+                        <!-- ===== ENDPOINT INFO ===== -->
+                        <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="badge-<?= strtolower($selectedSubData['method']) ?> text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">
+                                    <?= $selectedSubData['method'] ?>
+                                </span>
+                                <h3 class="text-lg font-bold text-white"><?= htmlspecialchars($selectedSubData['label']) ?></h3>
+                            </div>
+                            <p class="text-sm text-slate-400 mb-3"><?= htmlspecialchars($selectedSubData['description'] ?? '') ?></p>
+                            <div class="bg-slate-900 rounded-lg px-4 py-2.5 font-mono text-sm text-bpjs-200 border border-slate-700">
+                                <span class="text-slate-500"><?= rtrim($activeModule['base_url'], '/') ?></span><?= htmlspecialchars($selectedSubData['path']) ?>
+                            </div>
+                        </div>
+
+                        <!-- ===== FORMAT CONTOH ===== -->
+                        <?php if (!empty($selectedSubData['format'])): ?>
+                            <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                                        <span>📋</span> Format Contoh
+                                    </h4>
+                                    <button type="button" onclick="copyFormat(this)" class="text-xs text-bpjs-300 hover:text-bpjs-200 flex items-center gap-1 px-2 py-1 bg-slate-700/50 rounded">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                        Salin
+                                    </button>
+                                </div>
+                                <?php
+                                $formatData = $selectedSubData['format'];
+                                $formatJson = isset($formatData['request']) ? $formatData['request'] : (isset($formatData['response']) ? $formatData['response'] : '');
+                                ?>
+                                <?php if ($formatJson): ?>
+                                    <pre class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto"><code class="format-code"><?= htmlspecialchars($formatJson) ?></code></pre>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <!-- ===== REQUEST BUILDER ===== -->
+                        <form method="POST" action="" class="space-y-4">
+
+                            <input type="hidden" name="action"        value="send_request">
+                            <input type="hidden" name="module_key"     value="<?= htmlspecialchars($selectedMod) ?>">
+                            <input type="hidden" name="sub_key"        value="<?= htmlspecialchars($selectedSub) ?>">
+                            <input type="hidden" name="method"         value="<?= htmlspecialchars($selectedSubData['method']) ?>">
+                            <input type="hidden" name="path"           value="<?= htmlspecialchars($selectedSubData['path']) ?>">
+                            <input type="hidden" name="base_url"       value="<?= htmlspecialchars($activeModule['base_url']) ?>">
+                            <input type="hidden" name="module"         value="<?= htmlspecialchars($selectedMod) ?>">
+                            <input type="hidden" name="sub"            value="<?= htmlspecialchars($selectedSub) ?>">
+
+                            <!-- Decrypt Toggle -->
+                            <div class="flex items-center gap-2">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-bpjs-500">
+                                    <span class="text-sm text-slate-300">🔓 Decrypt Response (LZString + AES-256)</span>
+                                </label>
+                            </div>
+
+                            <!-- Path / Query Parameters -->
+                            <?php if (!empty($selectedSubData['params'])): ?>
+                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                                    <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                                        <span>🔗</span> Path & Query Parameters
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <?php foreach ($selectedSubData['params'] as $idx => $param): ?>
+                                            <div>
+                                                <label class="block text-xs text-slate-400 mb-1 font-mono">
+                                                    <?= htmlspecialchars($param['name']) ?>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="params[<?= $idx ?>][name]"
+                                                    value="<?= htmlspecialchars($param['name']) ?>"
+                                                    class="hidden"
+                                                >
+                                                <input
+                                                    type="text"
+                                                    name="params[<?= $idx ?>][value]"
+                                                    value="<?= htmlspecialchars($param['default'] ?? '') ?>"
+                                                    placeholder="<?= htmlspecialchars($param['placeholder']) ?>"
+                                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400"
+                                                >
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Request Body -->
+                            <?php if (!empty($selectedSubData['body'])): ?>
+                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                                    <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                                        <span>📦</span> Request Body
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <?php foreach ($selectedSubData['body'] as $idx => $field): ?>
+                                            <div>
+                                                <label class="block text-xs text-slate-400 mb-1 font-mono">
+                                                    <?= htmlspecialchars($field['name']) ?>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="body[<?= $idx ?>][name]"
+                                                    value="<?= htmlspecialchars($field['name']) ?>"
+                                                    class="hidden"
+                                                >
+                                                <textarea
+                                                    name="body[<?= $idx ?>][value]"
+                                                    rows="3"
+                                                    placeholder="<?= htmlspecialchars($field['placeholder']) ?>"
+                                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400 font-mono"
+                                                ><?= htmlspecialchars($field['default'] ?? '') ?></textarea>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+
+                            <!-- Send Button -->
+                            <button
+                                type="submit"
+                                class="w-full bg-gradient-to-r from-bpjs-600 to-bpjs-500 hover:from-bpjs-500 hover:to-bpjs-400 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-bpjs-900/40 transition-all flex items-center justify-center gap-2"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                Kirim Request
+                            </button>
+
+                        </form>
+
+                    <?php endif; // endif $selectedSubData ?>
+
+                    <!-- ===== API RESPONSE ===== -->
+                    <?php if ($apiResponse !== null || $apiError !== ''): ?>
+                        <div class="border-t border-slate-700 pt-5 mt-5">
+                            <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                                <span>📨</span> Response
+                            </h4>
+
+                            <?php if ($apiError !== ''): ?>
+                                <div class="bg-red-900/30 border border-red-700 rounded-xl p-4 mb-4">
+                                    <p class="text-red-400 text-sm font-semibold mb-1">❌ Request Error</p>
+                                    <pre class="text-red-300 text-xs"><?= htmlspecialchars($apiError) ?></pre>
+                                </div>
+                            <?php else: ?>
+                                <?php
+                                // Support both 'metadata' (lowercase) and 'metaData' (camelCase) keys
+                                $metaData  = $apiResponse['metadata'] ?? $apiResponse['metaData'] ?? [];
+                                $httpCode  = $metaData['code']    ?? 'N/A';
+                                $httpMsg   = $metaData['message'] ?? '';
+                                $isNumeric = is_numeric($httpCode);
+                                $codeClass = $isNumeric
+                                    ? (($httpCode >= 200 && $httpCode < 300) ? 'green'
+                                        : (($httpCode >= 400 && $httpCode < 500) ? 'yellow' : 'red'))
+                                    : 'slate';
+                                ?>
+                                <div class="flex items-center gap-3 mb-3 flex-wrap">
+                                    <span class="bg-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-900/40 border border-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-700 text-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-400 text-xs font-bold px-2.5 py-1 rounded-lg">
+                                        HTTP <?= htmlspecialchars($httpCode) ?>
+                                    </span>
+                                    <span class="text-slate-400 text-sm"><?= htmlspecialchars($httpMsg) ?></span>
+                                    <?php if (!$isNumeric || $httpCode < 200 || $httpCode >= 400): ?>
+                                        <span class="text-amber-400 text-xs font-semibold">⚠ API mengembalikan error</span>
+                                    <?php endif; ?>
+                                </div>
+
+                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
+                                    <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
+                                        <span class="text-xs font-bold text-slate-400 uppercase tracking-warrow">Response Body</span>
+                                        <button
+                                            type="button"
+                                            onclick="copyResponse()"
+                                            class="text-xs text-bpjs-300 hover:text-bpjs-100 transition-colors"
+                                        >
+                                            📋 Copy
+                                        </button>
+                                    </div>
+                                    <?php
+                                    $jsonPretty = json_encode($apiResponse, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                                    if ($jsonPretty === false) {
+                                        $jsonPretty = print_r($apiResponse, true);
+                                    }
+                                    ?>
+                                    <pre id="responseBody" class="p-4 text-xs text-slate-300 font-mono overflow-x-auto"><?= htmlspecialchars($jsonPretty) ?></pre>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php elseif (!empty($debugInfo)): ?>
+                        <div class="border-t border-slate-700 pt-5 mt-5">
+                            <h4 class="text-sm font-bold text-amber-400 mb-3">🐛 Debug Info</h4>
+                            <pre class="text-xs text-slate-400"><?= htmlspecialchars(print_r($debugInfo, true)) ?></pre>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php endif; // endif $selectedSub === null ?>
+
+                </div><!-- /right panel -->
+            </div><!-- /flex -->
+        </main>
+    </div><!-- /main layout -->
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script>
+        // Toggle module accordion
+        function toggleModule(key) {
+            const subs   = document.getElementById('subs-' + key);
+            const arrow  = document.getElementById('arrow-' + key);
+            const isOpen = subs.style.maxHeight && subs.style.maxHeight !== '0px';
+
+            if (isOpen) {
+                subs.style.maxHeight = '0px';
+                subs.style.opacity   = '0';
+                arrow.classList.remove('rotate-90');
+            } else {
+                subs.style.maxHeight = subs.scrollHeight + 'px';
+                subs.style.opacity   = '1';
+                arrow.classList.add('rotate-90');
+            }
+        }
+
+        // Select endpoint from left list
+        function selectEndpoint(key) {
+            const form = document.createElement('form');
+            form.method = 'GET';
+            form.action = '';
+            const modInput = document.createElement('input');
+            modInput.type  = 'hidden';
+            modInput.name  = 'module';
+            modInput.value = '<?= htmlspecialchars($selectedMod) ?>';
+            const subInput = document.createElement('input');
+            subInput.type  = 'hidden';
+            subInput.name  = 'sub';
+            subInput.value = key;
+            form.appendChild(modInput);
+            form.appendChild(subInput);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Copy response to clipboard
+        function copyResponse() {
+            const text = document.getElementById('responseBody').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Response copied to clipboard!');
+            });
+        }
+
+        // Sidebar search filter
+        document.getElementById('sidebarSearch').addEventListener('input', function () {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.module-group').forEach(function (grp) {
+                const label = grp.querySelector('button span:nth-child(2)').textContent.toLowerCase();
+                const subs  = grp.querySelectorAll('[data-sub]');
+                let match   = label.includes(q);
+                if (!match) {
+                    grp.querySelectorAll('.sub-item').forEach(function (s) {
+                        s.style.display = s.textContent.toLowerCase().includes(q) ? '' : 'none';
+                        if (s.style.display !== 'none') match = true;
+                    });
+                }
+                grp.style.display = match ? '' : 'none';
+                if (match && q) {
+                    const subsEl = grp.querySelector('[id^="subs-"]');
+                    if (subsEl) { subsEl.style.maxHeight = '2000px'; subsEl.style.opacity = '1'; }
+                }
+            });
+        });
+
+        // Persist form data after submission
+        function getStorageKey() {
+            return 'bpjs_form_' + <?= json_encode($selectedMod) ?> + '_' + <?= json_encode($selectedSub) ?>;
+        }
+
+        function saveFormData() {
+            const formData = {};
+            const inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
+            inputs.forEach(function(input) {
+                if (input.name) {
+                    formData[input.name] = input.value;
+                }
+            });
+            localStorage.setItem(getStorageKey(), JSON.stringify(formData));
+        }
+
+        function restoreFormData() {
+            const saved = localStorage.getItem(getStorageKey());
+            if (!saved) return;
+            const formData = JSON.parse(saved);
+            Object.keys(formData).forEach(function(name) {
+                const input = document.querySelector('[name="' + name + '"]');
+                if (input) {
+                    input.value = formData[name];
+                }
+            });
+        }
+
+        // Save form data on input/change
+        document.addEventListener('input', function(e) {
+            if (e.target.closest('form')) {
+                saveFormData();
+            }
+        });
+
+        document.addEventListener('change', function(e) {
+            if (e.target.closest('form')) {
+                saveFormData();
+            }
+        });
+
+        // Restore form data on page load
+        document.addEventListener('DOMContentLoaded', restoreFormData);
+    </script>
+</body>
+</html>
