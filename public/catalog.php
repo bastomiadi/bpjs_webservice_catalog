@@ -11,76 +11,23 @@ ini_set('display_errors', 1);
 
 $basePath = __DIR__ . '/..';
 
-// Load library
-foreach (glob($basePath . '/library/lz-string/src/LZCompressor/*.php') as $file) {
-    require_once $file;
-}
+// Initialize bootstrap
+require_once $basePath . '/app/Bootstrap.php';
+BPJSBootstrap::init($basePath);
 
-// Load core files
-require_once $basePath . '/config/env.php';
-require_once $basePath . '/helpers/bpjs_signature.php';
-require_once $basePath . '/helpers/bpjs_request.php';
-require_once $basePath . '/helpers/bpjs_decrypt.php';
-loadEnv($basePath . '/.env');
+// Get configuration
+$credentials = BPJSBootstrap::getCredentials();
+$apiConfig = BPJSBootstrap::getApiConfig();
 
-// Credentials
-$consId    = $_ENV['BPJS_CONS_ID'] ?? '';
-$secretKey = $_ENV['BPJS_SECRET_KEY'] ?? '';
-$userKey   = $_ENV['BPJS_USER_KEY'] ?? '';
+$consId = $credentials['cons_id'];
+$secretKey = $credentials['secret_key'];
+$userKey = $credentials['user_key'];
+$isDevMode = BPJSBootstrap::getIsDevMode();
+$apiDomainVersion = $apiConfig['api_version'];
+$currentDomain = BPJSBootstrap::getCurrentDomain();
 
-// API Domain Configuration
-$isDevMode        = isset($_GET['dev_mode']) ? ($_GET['dev_mode'] === 'true') : (($_COOKIE['bpjs_dev_mode'] ?? 'false') === 'true');
-$apiDomainVersion = isset($_GET['api_version']) ? $_GET['api_version'] : (($_COOKIE['bpjs_api_version'] ?? 'v1'));
-
-$prodDomainMap = ['v1' => 'apijkn.bpjs-kesehatan.go.id', 'v2' => 'new-apijkn.bpjs-kesehatan.go.id'];
-$currentDomain = $isDevMode ? 'apijkn-dev.bpjs-kesehatan.go.id' : ($prodDomainMap[$apiDomainVersion] ?? $prodDomainMap['v1']);
-
-/*
-|--------------------------------------------------------------------------
-| HELPER FUNCTIONS
-|--------------------------------------------------------------------------
-*/
-
-function getBaseUrl($moduleKey, $currentDomain, $isDevMode) {
-    $prodPaths = [
-        'vclaim' => '/vclaim-rest', 'antrean_rs' => '/antreanrs', 'antrean_fktp' => '/antreanfktp',
-        'apotek' => '/apotek-rest', 'pcare' => '/pcare-rest', 'icare' => '/wsihs',
-        'ws_rekam_medis' => '/erekammedis', 'aplicares' => '/aplicaresws/rest',
-    ];
-
-    $devDomains = [
-        'vclaim' => 'apijkn-dev.bpjs-kesehatan.go.id/vclaim-rest-dev',
-        'antrean_rs' => 'apijkn-dev.bpjs-kesehatan.go.id/antreanrs_dev',
-        'antrean_fktp' => 'apijkn-dev.bpjs-kesehatan.go.id/antreanfktp_dev',
-        'apotek' => 'apijkn-dev.bpjs-kesehatan.go.id/apotek-rest-dev',
-        'pcare' => 'apijkn-dev.bpjs-kesehatan.go.id/pcare-rest-dev',
-        'icare' => 'apijkn-dev.bpjs-kesehatan.go.id/ihs_dev',
-        'ws_rekam_medis' => 'apijkn-dev.bpjs-kesehatan.go.id/erekammedis_dev',
-    ];
-
-    if ($moduleKey === 'aplicares') {
-        return $isDevMode
-            ? 'https://apijkn.bpjs-kesehatan.go.id/aplicaresws/rest'
-            : 'https://' . $currentDomain . ($prodPaths[$moduleKey] ?? '');
-    }
-
-    return $isDevMode && isset($devDomains[$moduleKey])
-        ? 'https://' . $devDomains[$moduleKey]
-        : 'https://' . $currentDomain . ($prodPaths[$moduleKey] ?? '');
-}
-
-/*
-|--------------------------------------------------------------------------
-| LOAD MODULES
-|--------------------------------------------------------------------------
-*/
-
-$modules = [];
-foreach (glob($basePath . '/app/modules/*.php') as $file) {
-    $moduleKey = basename($file, '.php');
-    $moduleData = require_once $file;
-    is_array($moduleData) && $modules[$moduleKey] = $moduleData;
-}
+// Load modules (variables must be in scope for module files)
+$modules = BPJSBootstrap::loadModules();
 
 /*
 |--------------------------------------------------------------------------
@@ -182,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $debugInfo['url'] = $url;
         $debugInfo['method'] = $method;
 
-        $auth = generateSignature($consId, $secretKey);
+        $auth = BPSignature::generate($consId, $secretKey);
 
         $requestConfig = [
             'url'       => $url,
@@ -197,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $requestConfig['body'] = $body;
         }
 
-        $response = bpjsRequest($requestConfig);
+        $response = BPJSRequest::send($requestConfig);
         $debugInfo['bpjs_response'] = $response;
 
         if (!$response['status']) {
@@ -216,7 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 // Only decrypt if the decrypt checkbox is checked
                 if ($decrypt) {
                     try {
-                        $apiResponse['response'] = decryptResponse($consId, $secretKey, $auth['timestamp'], $apiResponse['response']);
+                        $apiResponse['response'] = BPJSDecrypt::decryptResponse($consId, $secretKey, $auth['timestamp'], $apiResponse['response']);
                     } catch (\Exception $e) {
                         $apiResponse['decrypt_error'] = 'Decrypt failed: ' . $e->getMessage();
                     }
