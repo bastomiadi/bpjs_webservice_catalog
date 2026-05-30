@@ -8,6 +8,7 @@
  * - $modules: array of modules for sidebar (required if $showSidebar is true)
  * - $selectedMod: currently selected module key
  * - $selectedSub: currently selected sub-module key
+ * 
  */
 
 $showSidebar = $showSidebar ?? true;
@@ -15,17 +16,17 @@ $showSidebar = $showSidebar ?? true;
 
 <?php if ($showSidebar): ?>
     <!-- ===== SIDEBAR ===== -->
-    <aside class="w-72 bg-slate-800 border-r border-slate-700 flex flex-col flex-shrink-0">
+    <aside class="w-72 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 shadow-lg">
 
         <!-- Search -->
-        <div class="p-3 border-b border-slate-700">
+        <div class="p-3 border-b border-gray-200">
             <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                 <input
                     type="text"
                     id="sidebarSearch"
                     placeholder="Cari modul / endpoint..."
-                    class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400"
+                    class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400"
                 >
             </div>
         </div>
@@ -39,6 +40,8 @@ $showSidebar = $showSidebar ?? true;
                     $isActive   = ($modKey === $selectedMod);
                     $subCount   = count($mod['sub_modules']);
                     $expanded   = $isActive || $selectedSub !== null;
+                    $modIcon = $mod['icon'] ?? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V9m6 8V9m-6 8h6"/></svg>';
+                    $modLabel = $mod['label'] ?? $modKey;
                     ?>
                     <div class="module-group" data-module="<?= $modKey ?>">
 
@@ -46,12 +49,14 @@ $showSidebar = $showSidebar ?? true;
                         <button
                             type="button"
                             onclick="toggleModule('<?= $modKey ?>')"
-                            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors
-                                <?= $isActive ? 'bg-bpjs-600 text-white' : 'text-slate-300 hover:bg-slate-700' ?>"
+                            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all duration-200
+                                <?= $isActive 
+                                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30' 
+                                    : 'text-gray-700 hover:bg-gray-100' ?>"
                         >
-                            <span class="text-lg flex-shrink-0"><?= $mod['icon'] ?? '📁' ?></span>
-                            <span class="flex-1 font-semibold text-sm truncate"><?= htmlspecialchars($mod['label'] ?? $modKey) ?></span>
-                            <span class="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded-full flex-shrink-0"><?= $subCount ?></span>
+                            <span class="text-lg flex-shrink-0"><?= is_string($modIcon) ? $modIcon : $modIcon ?></span>
+                            <span class="flex-1 font-semibold text-sm truncate"><?= htmlspecialchars($modLabel) ?></span>
+                            <span class="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full flex-shrink-0"><?= $subCount ?></span>
                             <svg id="arrow-<?= $modKey ?>" class="w-4 h-4 flex-shrink-0 transition-transform <?= $expanded ? 'rotate-90' : '' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
@@ -59,7 +64,7 @@ $showSidebar = $showSidebar ?? true;
 
                         <!-- Sub-modules -->
                         <div id="subs-<?= $modKey ?>" class="overflow-hidden transition-all duration-200 <?= $expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0' ?>">
-                            <div class="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-700 pl-2 pb-2">
+                            <div class="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-200 pl-2 pb-2">
 
                                 <?php if (isset($mod['sub_modules']) && is_array($mod['sub_modules'])): ?>
                                     <?php foreach ($mod['sub_modules'] as $sub): ?>
@@ -68,10 +73,10 @@ $showSidebar = $showSidebar ?? true;
                                         ?>
                                         <a
                                             href="?module=<?= $modKey ?>&sub=<?= $sub['key'] ?>"
-                                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors
+                                            class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-all duration-200
                                                 <?= $subActive
-                                                    ? 'bg-bpjs-500/30 text-bpjs-100 border border-bpjs-400/40'
-                                                    : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200' ?>"
+                                                    ? 'bg-primary-500/20 text-primary-700 border border-primary-500/50'
+                                                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900' ?>"
                                         >
                                             <span class="method-<?= strtolower($sub['method']) ?> font-mono font-bold text-[10px] w-10 text-center flex-shrink-0">
                                                 <?= $sub['method'] ?>
@@ -90,14 +95,14 @@ $showSidebar = $showSidebar ?? true;
         </nav>
 
         <!-- Sidebar Footer -->
-        <div class="p-3 border-t border-slate-700 text-[10px] text-slate-500 text-center">
+        <div class="p-3 border-t border-gray-200 text-[10px] text-gray-500 text-center">
             BPJS Kesehatan API Catalog v1.0
         </div>
     </aside>
 <?php endif; ?>
 
 <!-- ===== MAIN CONTENT ===== -->
-<main class="<?= $showSidebar ? '' : 'w-full' ?> flex-1 <?= $showSidebar ? 'overflow-y-auto' : 'overflow-hidden' ?> bg-slate-900">
+<main class="<?= $showSidebar ? '' : 'w-full' ?> flex-1 <?= $showSidebar ? 'overflow-y-auto' : 'overflow-hidden' ?> bg-white">
 
     <script>
         // Toggle module accordion

@@ -1,7 +1,7 @@
 <?php
 return [
         'label'       => 'Antrean FKTP',
-        'icon'        => '🏥',
+        'icon'        => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 12.414a8 8 0 11-3.536-3.536L8.343 7.657m8.484 8.484z"/></svg>',
         'description' => 'Modul Antrean Fasilitas Kesehatan Tingkat Pertama',
         'base_url'    => getBaseUrl('antrean_fktp', $currentDomain, $isDevMode),
         'sub_modules' => [

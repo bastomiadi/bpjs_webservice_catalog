@@ -1,7 +1,7 @@
 <?php
 return [
         'label'       => 'WS Rekam Medis',
-        'icon'        => '📁',
+        'icon'        => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V9m6 8V9m-6 8h6"/></svg>',
         'description' => 'Modul WS Rekam Medis – Data Rekam Medis Elektronik',
         'base_url'    => getBaseUrl('ws_rekam_medis', $currentDomain, $isDevMode),
         'sub_modules' => [

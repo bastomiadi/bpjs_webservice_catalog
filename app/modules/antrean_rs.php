@@ -1,7 +1,7 @@
 <?php
 return [
         'label'       => 'Antrean RS',
-        'icon'        => '🩺',
+        'icon'        => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1"/></svg>',
         'description' => 'Modul Antrean Rumah Sakit',
         'base_url'    => getBaseUrl('antrean_rs', $currentDomain, $isDevMode),
         'sub_modules' => [

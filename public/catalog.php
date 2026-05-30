@@ -263,7 +263,7 @@ $activeSubs    = $activeModule['sub_modules'] ?? [];
 
 // Add icon and label to module if not present
 if (!isset($activeModule['icon'])) {
-    $activeModule['icon'] = '📁';
+    $activeModule['icon'] = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V9m6 8V9m-6 8h6"/></svg>';
 }
 if (!isset($activeModule['label'])) {
     $activeModule['label'] = $selectedMod;
@@ -280,17 +280,17 @@ include __DIR__ . '/inc/header.php';
     <div class="flex flex-1 overflow-hidden">
 
         <!-- ===== SIDEBAR ===== -->
-        <aside class="w-72 bg-slate-800 border-r border-slate-700 flex flex-col flex-shrink-0">
+        <aside class="w-72 bg-white border-r border-gray-200 flex flex-col flex-shrink-0 shadow-lg">
 
             <!-- Search -->
-            <div class="p-3 border-b border-slate-700">
+            <div class="p-3 border-b border-gray-200">
                 <div class="relative">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">🔍</span>
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
                     <input
                         type="text"
                         id="sidebarSearch"
                         placeholder="Cari modul / endpoint..."
-                        class="w-full bg-slate-900 border border-slate-600 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400"
+                        class="w-full bg-gray-50 border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400"
                     >
                 </div>
             </div>
@@ -314,11 +314,11 @@ include __DIR__ . '/inc/header.php';
                             type="button"
                             onclick="toggleModule('<?= $modKey ?>')"
                             class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors
-                                <?= $isActive ? 'bg-bpjs-600 text-white' : 'text-slate-300 hover:bg-slate-700' ?>"
+                                <?= $isActive ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30' : 'text-gray-700 hover:bg-gray-100' ?>"
                         >
                             <span class="text-lg flex-shrink-0"><?= $modIcon ?></span>
                             <span class="flex-1 font-semibold text-sm truncate"><?= htmlspecialchars($modLabel) ?></span>
-                            <span class="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded-full flex-shrink-0"><?= $subCount ?></span>
+                            <span class="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full flex-shrink-0"><?= $subCount ?></span>
                             <svg id="arrow-<?= $modKey ?>" class="w-4 h-4 flex-shrink-0 transition-transform <?= $expanded ? 'rotate-90' : '' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
@@ -326,7 +326,7 @@ include __DIR__ . '/inc/header.php';
 
                         <!-- Sub-modules -->
                         <div id="subs-<?= $modKey ?>" class="overflow-hidden transition-all duration-200 <?= $expanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0' ?>">
-                            <div class="ml-4 mt-1 space-y-0.5 border-l-2 border-slate-700 pl-2 pb-2">
+                            <div class="ml-4 mt-1 space-y-0.5 border-l-2 border-gray-200 pl-2 pb-2">
 
                                 <?php foreach ($mod['sub_modules'] as $sub): ?>
                                     <?php
@@ -336,8 +336,8 @@ include __DIR__ . '/inc/header.php';
                                         href="?module=<?= $modKey ?>&sub=<?= $sub['key'] ?>"
                                         class="flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs transition-colors
                                             <?= $subActive
-                                                ? 'bg-bpjs-500/30 text-bpjs-100 border border-bpjs-400/40'
-                                                : 'text-slate-400 hover:bg-slate-700/60 hover:text-slate-200' ?>"
+                                                ? 'bg-primary-500/20 text-primary-700 border border-primary-500/50'
+                                                : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900' ?>"
                                     >
                                         <span class="method-<?= strtolower($sub['method']) ?> font-mono font-bold text-[10px] w-10 text-center flex-shrink-0">
                                             <?= $sub['method'] ?>
@@ -354,30 +354,30 @@ include __DIR__ . '/inc/header.php';
             </nav>
 
             <!-- Sidebar Footer -->
-            <div class="p-3 border-t border-slate-700 text-[10px] text-slate-500 text-center">
+            <div class="p-3 border-t border-gray-200 text-[10px] text-gray-500 text-center">
                 BPJS Kesehatan API Catalog v1.0
             </div>
         </aside>
 
         <!-- ===== MAIN CONTENT ===== -->
-        <main class="flex-1 overflow-y-auto bg-slate-900">
+        <main class="flex-1 overflow-y-auto bg-gray-50">
 
             <!-- ===== MODULE HEADER ===== -->
-            <div class="bg-gradient-to-r from-bpjs-700 to-bpjs-600 px-8 py-6 border-b border-bpjs-500">
+            <div class="bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
                 <div class="flex items-start justify-between">
                     <div>
                         <div class="flex items-center gap-3 mb-1">
                             <span class="text-3xl"><?= $activeModule['icon'] ?></span>
-                            <h2 class="text-2xl font-bold text-white"><?= htmlspecialchars($activeModule['label']) ?></h2>
+                            <h2 class="text-2xl font-bold text-gray-900"><?= htmlspecialchars($activeModule['label']) ?></h2>
                         </div>
-                        <p class="text-bpjs-100 text-sm"><?= htmlspecialchars($activeModule['description'] ?? '') ?></p>
-                        <p class="text-bpjs-200 text-xs mt-1 font-mono">
-                            Base URL: <span class="text-white"><?= htmlspecialchars($activeModule['base_url']) ?></span>
-                            <span class="ml-2 px-2 py-0.5 bg-bpjs-500/30 rounded text-[10px] text-bpjs-200"><?= strtoupper($apiDomainVersion) ?> API</span>
+                        <p class="text-gray-500 text-sm"><?= htmlspecialchars($activeModule['description'] ?? '') ?></p>
+                        <p class="text-gray-400 text-xs mt-1 font-mono">
+                            Base URL: <span class="text-gray-900 font-medium"><?= htmlspecialchars($activeModule['base_url']) ?></span>
+                            <span class="ml-2 px-2 py-0.5 bg-primary-50 rounded text-[10px] text-primary-600 font-semibold"><?= strtoupper($apiDomainVersion) ?> API</span>
                         </p>
                     </div>
                     <div class="text-right">
-                        <span class="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full">
+                        <span class="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium">
                             <?= count($activeModule['sub_modules']) ?> Endpoints
                         </span>
                     </div>
@@ -387,9 +387,9 @@ include __DIR__ . '/inc/header.php';
             <div class="flex">
 
                 <!-- ===== ENDPOINT LIST (LEFT) ===== -->
-                <div class="w-80 border-r border-slate-700 overflow-y-auto sidebar-scroll flex-shrink-0" style="max-height: calc(100vh - 200px);">
+                <div class="w-80 border-r border-gray-200 overflow-y-auto sidebar-scroll flex-shrink-0" style="max-height: calc(100vh - 200px);">
                     <div class="p-4">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Daftar Endpoint</h3>
+                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Daftar Endpoint</h3>
                         <div class="space-y-1" id="endpointList">
 
                             <?php foreach ($activeModule['sub_modules'] as $sub): ?>
@@ -401,17 +401,17 @@ include __DIR__ . '/inc/header.php';
                                     onclick="selectEndpoint('<?= $sub['key'] ?>')"
                                     class="w-full text-left px-3 py-2.5 rounded-lg transition-all
                                         <?= $subActive
-                                            ? 'bg-bpjs-600/40 border border-bpjs-400/50 shadow-lg shadow-bpjs-900/30'
-                                            : 'bg-slate-800/50 border border-transparent hover:bg-slate-700/60 hover:border-slate-600' ?>"
+                                            ? 'bg-primary-50 border border-primary-200 shadow-md'
+                                            : 'bg-gray-50 border border-transparent hover:bg-gray-100' ?>"
                                 >
                                     <div class="flex items-center gap-2 mb-1">
                                         <span class="badge-<?= strtolower($sub['method']) ?> text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
                                             <?= $sub['method'] ?>
                                         </span>
-                                        <span class="text-sm font-semibold text-slate-100 truncate"><?= htmlspecialchars($sub['label']) ?></span>
+                                        <span class="text-sm font-semibold text-gray-900 truncate"><?= htmlspecialchars($sub['label']) ?></span>
                                     </div>
-                                    <p class="text-[11px] text-slate-500 font-mono truncate"><?= htmlspecialchars($sub['path']) ?></p>
-                                    <p class="text-[11px] text-slate-600 mt-1 line-clamp-2"><?= htmlspecialchars($sub['description'] ?? '') ?></p>
+                                    <p class="text-[11px] text-gray-400 font-mono truncate"><?= htmlspecialchars($sub['path']) ?></p>
+                                    <p class="text-[11px] text-gray-500 mt-1 line-clamp-2"><?= htmlspecialchars($sub['description'] ?? '') ?></p>
                                 </button>
                             <?php endforeach; ?>
 
@@ -424,7 +424,7 @@ include __DIR__ . '/inc/header.php';
 
                     <?php if ($selectedSub === null): ?>
                         <!-- No endpoint selected -->
-                        <div class="flex flex-col items-center justify-center py-20 text-slate-500">
+                        <div class="flex flex-col items-center justify-center py-20 text-gray-500">
                             <div class="text-6xl mb-4">📡</div>
                             <p class="text-lg font-semibold">Pilih endpoint dari daftar di sebelah kiri</p>
                             <p class="text-sm mt-1">Klik salah satu endpoint untuk mulai menguji API</p>
@@ -443,27 +443,27 @@ include __DIR__ . '/inc/header.php';
                     ?>
 
                         <!-- ===== ENDPOINT INFO ===== -->
-                        <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                             <div class="flex items-center gap-3 mb-2">
                                 <span class="badge-<?= strtolower($selectedSubData['method']) ?> text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wide">
                                     <?= $selectedSubData['method'] ?>
                                 </span>
-                                <h3 class="text-lg font-bold text-white"><?= htmlspecialchars($selectedSubData['label']) ?></h3>
+                                <h3 class="text-lg font-bold text-gray-900"><?= htmlspecialchars($selectedSubData['label']) ?></h3>
                             </div>
-                            <p class="text-sm text-slate-400 mb-3"><?= htmlspecialchars($selectedSubData['description'] ?? '') ?></p>
-                            <div class="bg-slate-900 rounded-lg px-4 py-2.5 font-mono text-sm text-bpjs-200 border border-slate-700">
-                                <span class="text-slate-500"><?= rtrim($activeModule['base_url'], '/') ?></span><?= htmlspecialchars($selectedSubData['path']) ?>
+                            <p class="text-sm text-gray-500 mb-3"><?= htmlspecialchars($selectedSubData['description'] ?? '') ?></p>
+                            <div class="bg-gray-50 rounded-lg px-4 py-2.5 font-mono text-sm text-gray-600 border border-gray-200">
+                                <span class="text-gray-500"><?= rtrim($activeModule['base_url'], '/') ?></span><?= htmlspecialchars($selectedSubData['path']) ?>
                             </div>
                         </div>
 
                         <!-- ===== FORMAT CONTOH ===== -->
                         <?php if (!empty($selectedSubData['format'])): ?>
-                            <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
+                            <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                                 <div class="flex items-center justify-between mb-3">
-                                    <h4 class="text-sm font-bold text-slate-300 flex items-center gap-2">
+                                    <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2">
                                         <span>📋</span> Format Contoh
                                     </h4>
-                                    <button type="button" onclick="copyFormat(this)" class="text-xs text-bpjs-300 hover:text-bpjs-200 flex items-center gap-1 px-2 py-1 bg-slate-700/50 rounded">
+                                    <button type="button" onclick="copyFormat(this)" class="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                         </svg>
@@ -475,7 +475,7 @@ include __DIR__ . '/inc/header.php';
                                 $formatJson = isset($formatData['request']) ? $formatData['request'] : (isset($formatData['response']) ? $formatData['response'] : '');
                                 ?>
                                 <?php if ($formatJson): ?>
-                                    <pre class="bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs text-slate-300 font-mono overflow-x-auto"><code class="format-code"><?= htmlspecialchars($formatJson) ?></code></pre>
+                                    <pre class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-700 font-mono overflow-x-auto"><code class="format-code"><?= htmlspecialchars($formatJson) ?></code></pre>
                                 <?php endif; ?>
                             </div>
                         <?php endif; ?>
@@ -495,21 +495,21 @@ include __DIR__ . '/inc/header.php';
                             <!-- Decrypt Toggle -->
                             <div class="flex items-center gap-2">
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-bpjs-500">
-                                    <span class="text-sm text-slate-300">🔓 Decrypt Response (LZString + AES-256)</span>
+                                    <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-primary-500">
+                                    <span class="text-sm text-gray-700">🔓 Decrypt Response (LZString + AES-256)</span>
                                 </label>
                             </div>
 
                             <!-- Path / Query Parameters -->
                             <?php if (!empty($selectedSubData['params'])): ?>
-                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
-                                    <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                                <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                                         <span>🔗</span> Path & Query Parameters
                                     </h4>
                                     <div class="space-y-3">
                                         <?php foreach ($selectedSubData['params'] as $idx => $param): ?>
                                             <div>
-                                                <label class="block text-xs text-slate-400 mb-1 font-mono">
+                                                <label class="block text-xs text-gray-500 mb-1 font-mono">
                                                     <?= htmlspecialchars($param['name']) ?>
                                                 </label>
                                                 <input
@@ -523,7 +523,7 @@ include __DIR__ . '/inc/header.php';
                                                     name="params[<?= $idx ?>][value]"
                                                     value="<?= htmlspecialchars($param['default'] ?? '') ?>"
                                                     placeholder="<?= htmlspecialchars($param['placeholder']) ?>"
-                                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400"
+                                                    class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400"
                                                 >
                                             </div>
                                         <?php endforeach; ?>
@@ -533,14 +533,14 @@ include __DIR__ . '/inc/header.php';
 
                             <!-- Request Body -->
                             <?php if (!empty($selectedSubData['body'])): ?>
-                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
-                                    <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                                <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                                    <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                                         <span>📦</span> Request Body
                                     </h4>
                                     <div class="space-y-3">
                                         <?php foreach ($selectedSubData['body'] as $idx => $field): ?>
                                             <div>
-                                                <label class="block text-xs text-slate-400 mb-1 font-mono">
+                                                <label class="block text-xs text-gray-500 mb-1 font-mono">
                                                     <?= htmlspecialchars($field['name']) ?>
                                                 </label>
                                                 <input
@@ -553,7 +553,7 @@ include __DIR__ . '/inc/header.php';
                                                     name="body[<?= $idx ?>][value]"
                                                     rows="3"
                                                     placeholder="<?= htmlspecialchars($field['placeholder']) ?>"
-                                                    class="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-bpjs-400 focus:ring-1 focus:ring-bpjs-400 font-mono"
+                                                    class="w-full bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 font-mono focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400"
                                                 ><?= htmlspecialchars($field['default'] ?? '') ?></textarea>
                                             </div>
                                         <?php endforeach; ?>
@@ -564,7 +564,7 @@ include __DIR__ . '/inc/header.php';
                             <!-- Send Button -->
                             <button
                                 type="submit"
-                                class="w-full bg-gradient-to-r from-bpjs-600 to-bpjs-500 hover:from-bpjs-500 hover:to-bpjs-400 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-bpjs-900/40 transition-all flex items-center justify-center gap-2"
+                                class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-primary-500/30 transition-all flex items-center justify-center gap-2"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
@@ -578,15 +578,15 @@ include __DIR__ . '/inc/header.php';
 
                     <!-- ===== API RESPONSE ===== -->
                     <?php if ($apiResponse !== null || $apiError !== ''): ?>
-                        <div class="border-t border-slate-700 pt-5 mt-5">
-                            <h4 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                        <div class="border-t border-gray-200 pt-5 mt-5">
+                            <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
                                 <span>📨</span> Response
                             </h4>
 
                             <?php if ($apiError !== ''): ?>
-                                <div class="bg-red-900/30 border border-red-700 rounded-xl p-4 mb-4">
-                                    <p class="text-red-400 text-sm font-semibold mb-1">❌ Request Error</p>
-                                    <pre class="text-red-300 text-xs"><?= htmlspecialchars($apiError) ?></pre>
+                                <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                                    <p class="text-red-600 text-sm font-semibold mb-1">❌ Request Error</p>
+                                    <pre class="text-red-500 text-xs"><?= htmlspecialchars($apiError) ?></pre>
                                 </div>
                             <?php else: ?>
                                 <?php
@@ -601,22 +601,22 @@ include __DIR__ . '/inc/header.php';
                                     : 'slate';
                                 ?>
                                 <div class="flex items-center gap-3 mb-3 flex-wrap">
-                                    <span class="bg-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-900/40 border border-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-700 text-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-400 text-xs font-bold px-2.5 py-1 rounded-lg">
+                                    <span class="bg-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-50 border border-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-200 text-<?= $codeClass === 'green' ? 'green' : ($codeClass === 'yellow' ? 'yellow' : ($codeClass === 'red' ? 'red' : 'slate')) ?>-700 text-xs font-bold px-2.5 py-1 rounded-lg">
                                         HTTP <?= htmlspecialchars($httpCode) ?>
                                     </span>
-                                    <span class="text-slate-400 text-sm"><?= htmlspecialchars($httpMsg) ?></span>
+                                    <span class="text-gray-500 text-sm"><?= htmlspecialchars($httpMsg) ?></span>
                                     <?php if (!$isNumeric || $httpCode < 200 || $httpCode >= 400): ?>
-                                        <span class="text-amber-400 text-xs font-semibold">⚠ API mengembalikan error</span>
+                                        <span class="text-amber-600 text-xs font-semibold">⚠ API mengembalikan error</span>
                                     <?php endif; ?>
                                 </div>
 
-                                <div class="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden">
-                                    <div class="flex items-center justify-between px-4 py-2 bg-slate-800 border-b border-slate-700">
-                                        <span class="text-xs font-bold text-slate-400 uppercase tracking-warrow">Response Body</span>
+                                <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+                                    <div class="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200">
+                                        <span class="text-xs font-bold text-gray-600 uppercase tracking-warrow">Response Body</span>
                                         <button
                                             type="button"
                                             onclick="copyResponse()"
-                                            class="text-xs text-bpjs-300 hover:text-bpjs-100 transition-colors"
+                                            class="text-xs text-primary-600 hover:text-primary-700 transition-colors"
                                         >
                                             📋 Copy
                                         </button>
@@ -627,14 +627,14 @@ include __DIR__ . '/inc/header.php';
                                         $jsonPretty = print_r($apiResponse, true);
                                     }
                                     ?>
-                                    <pre id="responseBody" class="p-4 text-xs text-slate-300 font-mono overflow-x-auto"><?= htmlspecialchars($jsonPretty) ?></pre>
+                                    <pre id="responseBody" class="p-4 text-xs text-gray-700 font-mono overflow-x-auto"><?= htmlspecialchars($jsonPretty) ?></pre>
                                 </div>
                             <?php endif; ?>
                         </div>
                     <?php elseif (!empty($debugInfo)): ?>
-                        <div class="border-t border-slate-700 pt-5 mt-5">
-                            <h4 class="text-sm font-bold text-amber-400 mb-3">🐛 Debug Info</h4>
-                            <pre class="text-xs text-slate-400"><?= htmlspecialchars(print_r($debugInfo, true)) ?></pre>
+                        <div class="border-t border-gray-200 pt-5 mt-5">
+                            <h4 class="text-sm font-bold text-amber-600 mb-3">🐛 Debug Info</h4>
+                            <pre class="text-xs text-gray-500"><?= htmlspecialchars(print_r($debugInfo, true)) ?></pre>
                         </div>
                     <?php endif; ?>
 

@@ -1,7 +1,7 @@
 <?php
 return [
         'label'       => 'VClaim',
-        'icon'        => '📋',
+        'icon'        => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h4m7-6v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v10a4 4 0 004 4h6a4 4 0 004-4V12z"/></svg>',
         'description' => 'Modul VClaim – Klaim & Jaminan Peserta',
         'base_url'    => getBaseUrl('vclaim', $currentDomain, $isDevMode),
         'sub_modules' => [
