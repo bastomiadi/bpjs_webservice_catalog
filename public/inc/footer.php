@@ -21,7 +21,9 @@ $showSidebar = $showSidebar ?? true;
         <!-- Search -->
         <div class="p-3 border-b border-gray-200">
             <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-2a7 7 0 11-5-12"/>
+    </svg>
                 <input
                     type="text"
                     id="sidebarSearch"

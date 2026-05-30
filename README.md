@@ -4,7 +4,9 @@ A comprehensive web service catalog for BPJS Kesehatan APIs, similar to Swagger 
 
 ## Demo
 
-![BPJS API Web Service Catalog](screenshoot/screenshoot.png)
+![BPJS API Web Service Catalog](screenshoot/screenshoot_1.png)
+
+![BPJS API Web Service Catalog](screenshoot/screenshoot_2.png)
 
 ## Features
 
@@ -76,34 +78,44 @@ Toggle between development and production environments:
 
 ```
 catalog_ws_bpjs/
-├── index.php                  # Landing page (module grid)
-├── catalog.php               # Main application (API testing interface)
-├── README.md                 # This documentation
-├── .env-demo                 # Environment variables template
-├── config/
-│   └── env.php              # Configuration loader
-├── helpers/
-│   ├── bpjs_decrypt.php     # AES-256-CBC decryption
-│   ├── bpjs_request.php     # API request handler
-│   └── bpjs_signature.php   # HMAC-SHA256 signature generator
-├── library/
-│   └── lz-string/           # String compression library
+├── .env-demo                   # Environment variables template
+├── .gitignore                  # Git ignore configuration
+├── README.md                   # This documentation
+├── app/
+│   ├── Bootstrap.php           # Central initialization class
+│   └── modules/                # BPJS API module definitions
+│       ├── vclaim.php
+│       ├── antrean_rs.php
+│       ├── antrean_fktp.php
+│       ├── apotek.php
+│       ├── pcare.php
+│       ├── icare.php
+│       ├── ws_rekam_medis.php
+│       └── aplicares.php
+├── docs/                       # API documentation files
+│       ├── vclaim.txt
+│       ├── antreanrs.txt
+│       ├── antreanfktp.txt
+│       ├── apotek.txt
+│       ├── pcare.txt
+│       ├── icare.txt
+│       ├── rekammedis.txt
+│       └── aplicares.txt
+├── library/                    # Third-party libraries
+│   └── lz-string/              # String compression library
 ├── public/
-│   ├── index.php            # Landing page entry point
-│   ├── catalog.php          # Main application entry point
+│   ├── index.php               # Landing page entry point
+│   ├── catalog.php             # Main application entry point
 │   └── inc/
-│       ├── header.php       # Reusable header component
-│       └── footer.php       # Reusable footer component (sidebar + main content)
-└── app/
-    └── modules/             # BPJS API module definitions
-        ├── vclaim.php
-        ├── antrean_rs.php
-        ├── antrean_fktp.php
-        ├── apotek.php
-        ├── pcare.php
-        ├── icare.php
-        ├── ws_rekam_medis.php
-        └── aplicares.php
+│       ├── header.php          # Reusable header component
+│       └── footer.php          # Reusable footer component
+├── screenshoot/                # Screenshots
+│       ├── screenshoot_1.png
+│       └── screenshoot_2.png
+└── src/                        # Core helper classes
+    ├── Decrypt.php             # AES-256-CBC decryption
+    ├── Request.php             # API request handler
+    └── Signature.php           # HMAC-SHA256 signature generator
 ```
 
 ## Setup Instructions
@@ -111,15 +123,11 @@ catalog_ws_bpjs/
 1. **Prerequisites**
    - XAMPP (or similar PHP server)
    - PHP 7.4 or higher
-   - Composer (for dependencies)
 
 2. **Installation**
    ```bash
    # Clone or download the repository
    cd /Applications/XAMPP/xamppfiles/htdocs/catalog_ws_bpjs
-   
-   # Install dependencies
-   composer install
    ```
 
 3. **Configuration**
@@ -164,64 +172,80 @@ Sub-modules:
 
 ### VClaim
 Sub-modules:
-- Referensi
-- Pulang
-- RSC
-- BC
-- COB
-- ASKES
+- Insert/Update/Delete LPK (Lembar Pengajuan Klaim)
+- Data Lembar Pengajuan Klaim
+- Monitoring Kunjungan & Klaim
+- Histori Pelayanan Peserta
+- Klaim Jaminan Jasa Raharja
+- Peserta (by No Kartu & NIK)
+- Insert/Update/Delete PRB (Rujukan Balik)
+- Cari PRB
+- Referensi (Diagnosa, Poli, Faskes, Dokter, Propinsi, Kabupaten, Kecamatan, Diagnosa PRB, Obat PRB, Procedure, Kelas Rawat, Dokter, Spesialis, Ruang Rawat)
+- SEP (Insert, Update, Delete, Cari, Internal)
+- Rujukan (Insert, Update, Delete, Cari)
 
 ### Antrean RS
 Sub-modules:
+- Referensi Poli & Dokter
 - Jadwal Dokter
-- Jadwal Praktik
-- Pendaftaran
-- Pemeriksaan
-- Pulang
-- Batal
+- Update Jadwal Dokter
+- Tambah/Update/Ambil/Batal Antrean
+- Antrean Farmasi
+- Update Waktu Antrean
+- Dashboard & Laporan
+- Token & Status Antrean RS
+- Check In & Info Pasien Baru
+- Jadwal Operasi
 
 ### Apotek
 Sub-modules:
-- Obat
-- Aturan Pakai
-- Resep
-- Faktur
+- DPHO (Daftar Obat)
+- Poli & Fasilitas Kesehatan
+- Setting Apotek
+- Spesialistik
+- Obat (Referensi & Penyimpanan)
+- Resep (Simpan & Hapus)
+- Pendaftaran (Add, Delete)
+- Peserta
+- Poli FKTP
+- Provider Rayonisasi
+- Spesialis & Sarana
+- Riwayat Pelayanan Obat
 
 ### PCare
 Sub-modules:
-- Referensi
-- Pulang
-- RSC
-- BC
-- COB
-- ASKES
+- Diagnosa
+- Dokter
+- Club Prolanis
+- Kegiatan & Peserta Kelompok
+- Kunjungan (Add, Edit, Delete)
+- MCU (Add, Edit, Delete)
+- Obat (DPHO, by Kunjungan)
+- Pendaftaran
+- Peserta
+- Poli FKTP
+- Provider Rayonisasi
+- Spesialis (Sub Spesialis, Sarana, Khusus)
+- Faskes Rujukan
 
 ### Antrean FKTP
 Sub-modules:
-- Jadwal Dokter
-- Jadwal Praktik
-- Pendaftaran
-- Pemeriksaan
-- Pulang
-- Batal
+- Token & Status Antrean
+- Ambil/Sisa Antrean
+- Pasien Baru
+- Batal Antrean
+- Referensi Poli & Dokter
+- Tambah Antrean
+- Panggil/Ambil Antrean
 
 ### i-Care
 Sub-modules:
-- Referensi
-- Pulang
-- RSC
-- BC
-- COB
-- ASKES
+- FKRTL Validate (Rumah Sakit)
+- FKTP Validate (Fasilitas Kesehatan Tingkat Pertama)
 
 ### WS Rekam Medis
 Sub-modules:
-- Referensi
-- Pulang
-- RSC
-- BC
-- COB
-- ASKES
+- Insert Medical Record
 
 ## Code Architecture
 

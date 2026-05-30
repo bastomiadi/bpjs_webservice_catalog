@@ -232,7 +232,9 @@ include __DIR__ . '/inc/header.php';
             <!-- Search -->
             <div class="p-3 border-b border-gray-200">
                 <div class="relative">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-2a7 7 0 11-5-12"/>
+    </svg>
                     <input
                         type="text"
                         id="sidebarSearch"
@@ -251,7 +253,7 @@ include __DIR__ . '/inc/header.php';
                     $subCount   = count($mod['sub_modules']);
                     $expanded   = $isActive || $selectedSub !== null;
                     // Add icon and label if not present
-                    $modIcon = $mod['icon'] ?? '📁';
+                    $modIcon = $mod['icon'] ?? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/></svg>';
                     $modLabel = $mod['label'] ?? $modKey;
                     ?>
                     <div class="module-group" data-module="<?= $modKey ?>">
@@ -372,7 +374,11 @@ include __DIR__ . '/inc/header.php';
                     <?php if ($selectedSub === null): ?>
                         <!-- No endpoint selected -->
                         <div class="flex flex-col items-center justify-center py-20 text-gray-500">
-                            <div class="text-6xl mb-4">📡</div>
+                            <div class="w-24 h-24 mb-4 text-gray-300">
+                                <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                </svg>
+                            </div>
                             <p class="text-lg font-semibold">Pilih endpoint dari daftar di sebelah kiri</p>
                             <p class="text-sm mt-1">Klik salah satu endpoint untuk mulai menguji API</p>
                         </div>
@@ -408,7 +414,10 @@ include __DIR__ . '/inc/header.php';
                             <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                                 <div class="flex items-center justify-between mb-3">
                                     <h4 class="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                        <span>📋</span> Format Contoh
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h4m7-6v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v10a4 4 0 004 4h6a4 4 0 004-4V12z"/>
+                                        </svg>
+                                        Format Contoh
                                     </h4>
                                     <button type="button" onclick="copyFormat(this)" class="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 transition-colors">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -441,17 +450,25 @@ include __DIR__ . '/inc/header.php';
 
                             <!-- Decrypt Toggle -->
                             <div class="flex items-center gap-2">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-primary-500">
-                                    <span class="text-sm text-gray-700">🔓 Decrypt Response (LZString + AES-256)</span>
-                                </label>
-                            </div>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                        <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-primary-500">
+                                        <span class="text-sm text-gray-700 flex items-center gap-1">
+                                            <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2h12zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                            </svg>
+                                            Decrypt Response (LZString + AES-256)
+                                        </span>
+                                    </label>
+                                </div>
 
                             <!-- Path / Query Parameters -->
                             <?php if (!empty($selectedSubData['params'])): ?>
                                 <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                                     <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                        <span>🔗</span> Path & Query Parameters
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L20 7v10l-7 4v-7m-6-4l-3-3m0 0l3 3m-3-3v12"/>
+                                        </svg>
+                                        Path & Query Parameters
                                     </h4>
                                     <div class="space-y-3">
                                         <?php foreach ($selectedSubData['params'] as $idx => $param): ?>
@@ -482,7 +499,10 @@ include __DIR__ . '/inc/header.php';
                             <?php if (!empty($selectedSubData['body'])): ?>
                                 <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                                     <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                        <span>📦</span> Request Body
+                                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h4m7-6v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v10a4 4 0 004 4h6a4 4 0 004-4V12z"/>
+                                        </svg>
+                                        Request Body
                                     </h4>
                                     <div class="space-y-3">
                                         <?php foreach ($selectedSubData['body'] as $idx => $field): ?>
@@ -527,12 +547,20 @@ include __DIR__ . '/inc/header.php';
                     <?php if ($apiResponse !== null || $apiError !== ''): ?>
                         <div class="border-t border-gray-200 pt-5 mt-5">
                             <h4 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                                <span>📨</span> Response
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8h18M3 12h18M3 16h18"/>
+                                </svg>
+                                Response
                             </h4>
 
                             <?php if ($apiError !== ''): ?>
                                 <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                                    <p class="text-red-600 text-sm font-semibold mb-1">❌ Request Error</p>
+                                    <div class="flex items-center gap-1">
+                                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9.93 9.93 0 012.318-4.193m3.378 3.378A6.003 6.003 0 0121 12z"/>
+                                </svg>
+                                Request Error
+                            </div>
                                     <pre class="text-red-500 text-xs"><?= htmlspecialchars($apiError) ?></pre>
                                 </div>
                             <?php else: ?>
@@ -553,19 +581,32 @@ include __DIR__ . '/inc/header.php';
                                     </span>
                                     <span class="text-gray-500 text-sm"><?= htmlspecialchars($httpMsg) ?></span>
                                     <?php if (!$isNumeric || $httpCode < 200 || $httpCode >= 400): ?>
-                                        <span class="text-amber-600 text-xs font-semibold">⚠ API mengembalikan error</span>
+                                        <div class="flex items-center gap-1">
+                                <svg class="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856a1 1 0 00.883-.5 1 1 0 00.097-1.416L12 12.25"/>
+                                </svg>
+                                <span class="text-amber-600 text-xs font-semibold">API mengembalikan error</span>
+                            </div>
                                     <?php endif; ?>
                                 </div>
 
                                 <div class="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
                                     <div class="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-200">
-                                        <span class="text-xs font-bold text-gray-600 uppercase tracking-warrow">Response Body</span>
+                                        <span class="text-xs font-bold text-gray-600 uppercase tracking-warrow flex items-center gap-1">
+                                            <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8h18M3 12h18M3 16h18"/>
+                                            </svg>
+                                            Response Body
+                                        </span>
                                         <button
                                             type="button"
                                             onclick="copyResponse()"
-                                            class="text-xs text-primary-600 hover:text-primary-700 transition-colors"
+                                            class="text-xs text-primary-600 hover:text-primary-700 hover:bg-gray-200 px-2 py-1 rounded transition-colors flex items-center gap-1"
                                         >
-                                            📋 Copy
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                            Salin
                                         </button>
                                     </div>
                                     <?php
@@ -580,7 +621,12 @@ include __DIR__ . '/inc/header.php';
                         </div>
                     <?php elseif (!empty($debugInfo)): ?>
                         <div class="border-t border-gray-200 pt-5 mt-5">
-                            <h4 class="text-sm font-bold text-amber-600 mb-3">🐛 Debug Info</h4>
+                            <h4 class="text-sm font-bold text-amber-600 mb-3 flex items-center gap-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9v6m6-6v6m5-3a8 8 0 11-16 0 8 8 0 0116 0z"/>
+                                </svg>
+                                Debug Info
+                            </h4>
                             <pre class="text-xs text-gray-500"><?= htmlspecialchars(print_r($debugInfo, true)) ?></pre>
                         </div>
                     <?php endif; ?>
