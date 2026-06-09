@@ -98,6 +98,18 @@ class BPJSBootstrap
     }
 
     /**
+     * Get PCare-specific credentials from environment
+     */
+    public static function getPCareCredentials()
+    {
+        return [
+            'username' => $_ENV['PCARE_USERNAME'] ?? '',
+            'password' => $_ENV['PCARE_PASSWORD'] ?? '',
+            'kd_aplikasi' => $_ENV['PCARE_KD_APLIKASI'] ?? ''
+        ];
+    }
+
+    /**
      * Get API domain configuration
      */
     public static function getApiConfig()

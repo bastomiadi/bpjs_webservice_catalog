@@ -25,6 +25,10 @@ class BPJSRequest
             'Content-Type: application/json'
         ];
 
+        if (!empty($config['authorization'])) {
+            $headers[] = 'X-authorization: ' . $config['authorization'];
+        }
+
         $options = [
             CURLOPT_URL => $config['url'],
             CURLOPT_RETURNTRANSFER => true,

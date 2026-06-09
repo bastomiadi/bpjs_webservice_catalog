@@ -22,6 +22,7 @@ $apiConfig = BPJSBootstrap::getApiConfig();
 $consId = $credentials['cons_id'];
 $secretKey = $credentials['secret_key'];
 $userKey = $credentials['user_key'];
+$pcareCredentials = BPJSBootstrap::getPCareCredentials();
 $isDevMode = BPJSBootstrap::getIsDevMode();
 $apiDomainVersion = $apiConfig['api_version'];
 $currentDomain = BPJSBootstrap::getCurrentDomain();
@@ -139,6 +140,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'signature' => $auth['signature'],
             'user_key'  => $userKey,
         ];
+
+        if ($moduleKey === 'pcare' && !empty($pcareCredentials['username']) && !empty($pcareCredentials['password']) && !empty($pcareCredentials['kd_aplikasi'])) {
+            $requestConfig['authorization'] = base64_encode($pcareCredentials['username'] . ':' . $pcareCredentials['password'] . ':' . $pcareCredentials['kd_aplikasi']);
+        }
 
         if (!empty($body) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
             $requestConfig['body'] = $body;
