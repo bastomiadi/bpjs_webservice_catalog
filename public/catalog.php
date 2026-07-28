@@ -91,6 +91,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     $body = $formattedBody;
 
+    // ── Decode JSON-string body values (type=json fields) ──
+    foreach ($body as $k => $v) {
+        if (is_string($v) && (strpos($v, '{') === 0 || strpos($v, '[') === 0)) {
+            $decoded = json_decode($v, true);
+            if (is_array($decoded)) {
+                $body[$k] = $decoded;
+            }
+        }
+    }
+
     // ── Validate required path params before building URL ──
     $missingParams = [];
     foreach ($params as $p) {
