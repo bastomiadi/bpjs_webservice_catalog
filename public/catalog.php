@@ -67,34 +67,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
      *   'param'=>'xxx'
      * ]
      */
-    if ($moduleKey === 'icare' && $subKey === 'fkrtl_validate') {
+    $formattedBody = [];
 
-        $formattedBody = [];
-
-        foreach ($body as $item) {
-
-            if (!isset($item['name'])) {
-                continue;
-            }
-
-            $name  = $item['name'];
-            $value = $item['value'] ?? '';
-
-            // khusus kodedokter harus integer
-            if ($name === 'kodedokter') {
-                $formattedBody[$name] = (int)$value;
-            } else {
-                $formattedBody[$name] = trim($value);
-            }
+    foreach ($body as $item) {
+        if (!isset($item['name'])) {
+            continue;
         }
+        $name  = $item['name'];
+        $value = $item['value'] ?? '';
 
-        // khusus param -> numeric only
-        if (isset($formattedBody['param'])) {
-            $formattedBody['param'] = preg_replace('/\D/', '', $formattedBody['param']);
+        // khusus kodedokter harus integer
+        if ($name === 'kodedokter') {
+            $formattedBody[$name] = (int)$value;
+        } else {
+            $formattedBody[$name] = trim($value);
         }
-
-        $body = $formattedBody;
     }
+
+    // khusus param -> numeric only
+    if (isset($formattedBody['param'])) {
+        $formattedBody['param'] = preg_replace('/\D/', '', $formattedBody['param']);
+    }
+
+    $body = $formattedBody;
 
     // ── Validate required path params before building URL ──
     $missingParams = [];
