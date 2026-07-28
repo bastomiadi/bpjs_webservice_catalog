@@ -29,6 +29,13 @@ class BPJSRequest
             $headers[] = 'X-authorization: ' . $config['authorization'];
         }
 
+        // Custom headers (e.g. x-token, x-username, x-password for antrean_fktp)
+        if (!empty($config['custom_headers'])) {
+            foreach ($config['custom_headers'] as $hName => $hValue) {
+                $headers[] = $hName . ': ' . $hValue;
+            }
+        }
+
         $options = [
             CURLOPT_URL => $config['url'],
             CURLOPT_RETURNTRANSFER => true,
