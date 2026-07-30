@@ -145,12 +145,24 @@ $showSidebar = $showSidebar ?? true;
 
         // Copy response to clipboard
         function copyResponse() {
-            const text = document.getElementById('responseBody').textContent;
-            navigator.clipboard.writeText(text).then(() => {
-                alert('Response copied to clipboard!');
-            });
+            const text = document.getElementById("responseBody").textContent;
+            const clip = navigator.clipboard;
+            if (clip && clip.writeText) {
+                clip.writeText(text).then(() => {
+                    alert("Response copied to clipboard!");
+                });
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.left = "-9999px";
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                ta.remove();
+                alert("Response copied to clipboard!");
+            }
         }
-
         // Sidebar search filter
         document.getElementById('sidebarSearch')?.addEventListener('input', function () {
             const q = this.value.toLowerCase();
