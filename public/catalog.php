@@ -135,54 +135,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $debugInfo['url'] = $url;
         $debugInfo['method'] = $method;
 
-        $auth = BPSignature::generate($consId, $secretKey);
+        // ── Kirim satu request ke BPJS, mengembalikan [apiError, apiResponse] ──
+        $sendToBpjs = function ($body) use ($url, $method, $moduleKey, $consId, $secretKey, $userKey, $decrypt, $pcareCredentials, &$debugInfo) {
+            $auth = BPSignature::generate($consId, $secretKey);
 
-        $requestConfig = [
-            'url'       => $url,
-            'method'    => $method,
-            'cons_id'   => $consId,
-            'timestamp' => $auth['timestamp'],
-            'signature' => $auth['signature'],
-            'user_key'  => $userKey,
-        ];
+            $requestConfig = [
+                'url'       => $url,
+                'method'    => $method,
+                'cons_id'   => $consId,
+                'timestamp' => $auth['timestamp'],
+                'signature' => $auth['signature'],
+                'user_key'  => $userKey,
+            ];
 
-        // Custom headers from form
-        $rawHeaders = $_POST['headers'] ?? [];
-        if (is_array($rawHeaders)) {
-            $customHeaders = [];
-            foreach ($rawHeaders as $h) {
-                if (!empty($h['name']) && isset($h['value'])) {
-                    $customHeaders[$h['name']] = $h['value'];
+            // Custom headers from form
+            $rawHeaders = $_POST['headers'] ?? [];
+            if (is_array($rawHeaders)) {
+                $customHeaders = [];
+                foreach ($rawHeaders as $h) {
+                    if (!empty($h['name']) && isset($h['value'])) {
+                        $customHeaders[$h['name']] = $h['value'];
+                    }
+                }
+                if (!empty($customHeaders)) {
+                    $requestConfig['custom_headers'] = $customHeaders;
                 }
             }
-            if (!empty($customHeaders)) {
-                $requestConfig['custom_headers'] = $customHeaders;
+
+            if ($moduleKey === 'pcare' && !empty($pcareCredentials['username']) && !empty($pcareCredentials['password']) && !empty($pcareCredentials['kd_aplikasi'])) {
+                $requestConfig['authorization'] = base64_encode($pcareCredentials['username'] . ':' . $pcareCredentials['password'] . ':' . $pcareCredentials['kd_aplikasi']);
             }
-        }
 
-        if ($moduleKey === 'pcare' && !empty($pcareCredentials['username']) && !empty($pcareCredentials['password']) && !empty($pcareCredentials['kd_aplikasi'])) {
-            $requestConfig['authorization'] = base64_encode($pcareCredentials['username'] . ':' . $pcareCredentials['password'] . ':' . $pcareCredentials['kd_aplikasi']);
-        }
+            if (!empty($body) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
+                $requestConfig['body'] = $body;
+            }
 
-        if (!empty($body) && in_array($method, ['POST', 'PUT', 'PATCH'])) {
-            $requestConfig['body'] = $body;
-        }
+            $response = BPJSRequest::send($requestConfig);
+            $debugInfo['bpjs_response'] = $response;
 
-        $response = BPJSRequest::send($requestConfig);
-        $debugInfo['bpjs_response'] = $response;
+            if (!$response['status']) {
+                return ['apiError' => $response['message'] ?? 'Unknown error', 'apiResponse' => null];
+            }
 
-        if (!$response['status']) {
-            $apiError  = $response['message'] ?? 'Unknown error';
-            $apiResponse = null;
-        } else {
             $apiResponse = $response['data'];
-            
+
             // Check if the response is HTML (error page)
             $rawResponse = $response['raw_response'] ?? null;
             if ($rawResponse && (strpos($rawResponse, '<html>') !== false || strpos($rawResponse, '<!DOCTYPE') !== false)) {
-                $apiError = 'API returned HTML error. Possible causes: wrong endpoint URL, invalid credentials, or API not available. Response: ' . htmlspecialchars(substr($rawResponse, 0, 500));
-                $apiResponse = null;
-            } elseif ($apiResponse && isset($apiResponse['response']) && is_string($apiResponse['response'])) {
+                return ['apiError' => 'API returned HTML error. Possible causes: wrong endpoint URL, invalid credentials, or API not available. Response: ' . htmlspecialchars(substr($rawResponse, 0, 500)), 'apiResponse' => null];
+            }
+
+            if ($apiResponse && isset($apiResponse['response']) && is_string($apiResponse['response'])) {
                 // BPJS API returns encrypted data in the 'response' field
                 // Only decrypt if the decrypt checkbox is checked
                 if ($decrypt) {
@@ -193,6 +196,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     }
                 }
             }
+
+            return ['apiError' => '', 'apiResponse' => $apiResponse];
+        };
+
+        // ── Batch mode: kirim satu request per kodebooking ──
+        $batchSub = null;
+        foreach (($modules[$moduleKey]['sub_modules'] ?? []) as $sm) {
+            if ($sm['key'] === $subKey && !empty($sm['batch'])) {
+                $batchSub = $sm;
+                break;
+            }
+        }
+
+        if ($batchSub && isset($body['kodebooking'])) {
+            preg_match_all('/(\d{12})(?:\s+\(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}-\d{2}:\d{2}\))?/', (string) $body['kodebooking'], $matches);
+            $kodebookings = array_values(array_unique($matches[1]));
+
+            if (empty($kodebookings)) {
+                $apiError = 'Tidak ada kodebooking ditemukan. Format: 202512190047 (2026-01-12 18:00-21:00)';
+                $apiResponse = null;
+            } else {
+                $apiResponse = ['batch' => true, 'total' => count($kodebookings), 'results' => []];
+                foreach ($kodebookings as $kode) {
+                    $result = $sendToBpjs(array_merge($body, ['kodebooking' => $kode]));
+                    $apiResponse['results'][] = $result['apiError'] !== ''
+                        ? ['kodebooking' => $kode, 'status' => 'ERROR', 'message' => $result['apiError']]
+                        : ['kodebooking' => $kode, 'status' => 'OK', 'response' => $result['apiResponse']];
+                }
+            }
+        } else {
+            $result = $sendToBpjs($body);
+            $apiError  = $result['apiError'];
+            $apiResponse = $result['apiResponse'];
         }
     }
 

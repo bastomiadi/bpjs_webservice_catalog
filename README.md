@@ -12,7 +12,7 @@ A comprehensive web service catalog for BPJS Kesehatan APIs, similar to Swagger 
 
 ## Features
 
-### 1. **8 BPJS API Modules**
+### 1. **9 BPJS API Modules**
 - **Aplicares** - Hospital management services
 - **VClaim** - Claims and billing services
 - **Antrean RS** - Hospital queue management
@@ -21,6 +21,7 @@ A comprehensive web service catalog for BPJS Kesehatan APIs, similar to Swagger 
 - **Antrean FKTP** - Family planning and primary care queue
 - **i-Care** - Integrated care services
 - **WS Rekam Medis** - Medical record services
+- **Tools** - Utility tools (batch queue cancellation)
 
 ### 2. **Dynamic API Domain Version Selection**
 Implemented version switching between:
@@ -248,6 +249,10 @@ Sub-modules:
 ### WS Rekam Medis
 Sub-modules:
 - Insert Medical Record
+
+### Tools
+Sub-modules:
+- Batal Kode Booking Batch
 
 ## Code Architecture
 

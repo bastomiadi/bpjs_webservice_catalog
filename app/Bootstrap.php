@@ -200,6 +200,7 @@ function getBaseUrl($moduleKey, $currentDomain, $isDevMode)
         'icare' => '/wsihs',
         'ws_rekam_medis' => '/erekammedis', 
         'aplicares' => '/aplicaresws/rest',
+        'tools' => '/antreanrs',
     ];
 
     $devDomains = [
@@ -210,6 +211,7 @@ function getBaseUrl($moduleKey, $currentDomain, $isDevMode)
         'pcare' => 'apijkn-dev.bpjs-kesehatan.go.id/pcare-rest-dev',
         'icare' => 'apijkn-dev.bpjs-kesehatan.go.id/ihs_dev',
         'ws_rekam_medis' => 'apijkn-dev.bpjs-kesehatan.go.id/erekammedis_dev',
+        'tools' => 'apijkn-dev.bpjs-kesehatan.go.id/antreanrs_dev',
     ];
 
     if ($moduleKey === 'aplicares') {
