@@ -53,20 +53,26 @@ class BPJSRequest
 
         $response = curl_exec($curl);
         $error = curl_error($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 
-        curl_close($curl);
+        // PHP 8.0+: curl_close() is a no-op; guard to avoid deprecation notice on 8.5+
+        if (PHP_MAJOR_VERSION < 8) {
+            curl_close($curl);
+        }
 
         if ($error) {
             return [
                 'status' => false,
-                'message' => $error
+                'message' => $error,
+                'http_code' => 0,
             ];
         }
 
         return [
             'status' => true,
             'data' => json_decode($response, true),
-            'raw_response' => $response
+            'raw_response' => $response,
+            'http_code' => $httpCode,
         ];
     }
 }

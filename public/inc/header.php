@@ -17,6 +17,7 @@ $pageTitle = $pageTitle ?? 'BPJS Web Service Catalog';
 $showConsId = $showConsId ?? true;
 $showModeSelector = $showModeSelector ?? true;
 $showVersionSelector = $showVersionSelector ?? true;
+$activeNav = $activeNav ?? 'catalog';
 
 // Mask Cons ID for security
 $maskedConsId = $showConsId ? str_repeat('*', strlen($consId)) : '';
@@ -159,6 +160,11 @@ $maskedConsId = $showConsId ? str_repeat('*', strlen($consId)) : '';
                 <p class="text-sm text-gray-500">API Documentation & Testing Tool</p>
             </div>
         </div>
+        <!-- Navbar -->
+        <nav class="flex items-center gap-1 ml-6">
+            <a href="index.php" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors <?= $activeNav === 'catalog' ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' ?>">Catalog</a>
+            <a href="monitoring.php" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors <?= $activeNav === 'monitoring' ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' ?>">Monitoring Bridging</a>
+        </nav>
         <?php if ($showConsId || $showModeSelector || $showVersionSelector): ?>
         <div class="flex items-center gap-4">
             <?php if ($showConsId): ?>
