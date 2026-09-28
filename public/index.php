@@ -1,7 +1,5 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 /*
 |--------------------------------------------------------------------------
@@ -56,25 +54,58 @@ include __DIR__ . '/inc/header.php';
 ?>
 
     <!-- Main Content - Landing Page -->
-    <main class="flex-1 p-6 bg-gray-50">
+    <main class="flex-1 p-6 bg-gray-50 overflow-y-auto">
         <div class="max-w-7xl mx-auto">
+            <!-- Documentation Banner -->
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-2xl p-6 shadow-md">
+                <div>
+                    <h2 class="text-xl font-extrabold tracking-tight">Katalog & Dokumentasi BPJS Web Service</h2>
+                    <p class="text-primary-100 text-sm mt-1">Akses katalog interaktif testing API atau baca dokumentasi lengkap Markdown dari setiap modul BPJS Kesehatan.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="docs.php" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-primary-700 font-bold text-sm shadow hover:bg-primary-50 transition-all flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <span>Buka Dokumentasi </span>
+                    </a>
+                </div>
+            </div>
+
             <!-- Modules Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                <?php foreach ($modules as $key => $module): 
+                <?php 
+                $docMap = [
+                    'vclaim' => 'vclaim',
+                    'antrean_rs' => 'antreanrs',
+                    'antrean_fktp' => 'antreanfktp',
+                    'apotek' => 'apotek',
+                    'pcare' => 'pcare',
+                    'icare' => 'icare',
+                    'ws_rekam_medis' => 'rekammedis',
+                    'aplicares' => 'aplicares',
+                    'tools' => 'batalkodebooking'
+                ];
+                foreach ($modules as $key => $module): 
                     $config = $moduleConfig[$key] ?? ['name' => $key, 'icon' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/></svg>', 'color' => 'from-slate-500 to-slate-600'];
                     $endpointCount = count($module['sub_modules'] ?? []);
+                    $docKey = $docMap[$key] ?? $key;
                 ?>
-                <a href="catalog.php?module=<?= $key ?>" class="group bg-white border border-gray-200 rounded-xl p-5 transition-all duration-200 card-hover shadow-sm hover:shadow-md">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="w-12 h-12 rounded-lg bg-gradient-to-r <?= $config['color'] ?> flex items-center justify-center text-xl shadow-md text-white"><?= $config['icon'] ?></div>
-                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium"><?= $endpointCount ?> endpoints</span>
+                <div class="group bg-white border border-gray-200 rounded-xl p-5 transition-all duration-200 card-hover shadow-sm hover:shadow-md flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-r <?= $config['color'] ?> flex items-center justify-center text-xl shadow-md text-white"><?= $config['icon'] ?></div>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium"><?= $endpointCount ?> endpoints</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition-colors"><?= htmlspecialchars($config['name']) ?></h3>
+                        <p class="text-sm text-gray-500 mt-1"><?= htmlspecialchars($module['description'] ?? 'BPJS API Module') ?></p>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900 group-hover:text-primary-600 transition-colors"><?= htmlspecialchars($config['name']) ?></h3>
-                    <p class="text-sm text-gray-500 mt-1"><?= htmlspecialchars($module['description'] ?? 'BPJS API Module') ?></p>
-                    <div class="mt-3 pt-3 border-t border-gray-100">
-                        <span class="text-xs text-primary-600 group-hover:text-primary-700 font-medium">Pilih Modul →</span>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-semibold">
+                        <a href="catalog.php?module=<?= $key ?>" class="text-primary-600 hover:text-primary-700">Test API →</a>
+                        <a href="docs.php?doc=<?= $docKey ?>" class="text-gray-500 hover:text-primary-600 flex items-center gap-1">
+                            <span>Docs </span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
                     </div>
-                </a>
+                </div>
                 <?php endforeach; ?>
             </div>
         </div>

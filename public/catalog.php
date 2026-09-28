@@ -1,7 +1,5 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 /*
 |--------------------------------------------------------------------------
@@ -43,19 +41,42 @@ $selectedMod  = null;
 $debugInfo    = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send_request') {
-    $debugInfo['POST'] = $_POST;
+    if (filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+        $debugInfo['POST'] = $_POST;
+    }
 
     $moduleKey  = $_POST['module_key']  ?? '';
     $subKey     = $_POST['sub_key']     ?? '';
-    $method     = strtoupper($_POST['method'] ?? 'GET');
-    $path       = $_POST['path']        ?? '';
-    $baseUrl    = $_POST['base_url']    ?? '';
-    $rawParams  = $_POST['params']      ?? '{}';
-    $rawBody    = $_POST['body']        ?? '{}';
     $decrypt    = isset($_POST['decrypt']) && $_POST['decrypt'] === '1';
 
-    $params = is_array($rawParams) ? $rawParams : (json_decode($rawParams, true) ?: []);
-    $body   = is_array($rawBody)   ? $rawBody   : (json_decode($rawBody,   true) ?: []);
+    // ── CSRF Check ──
+    if (!BPJSBootstrap::validateCsrfToken($_POST['csrf_token'] ?? '')) {
+        $apiError = 'Validasi CSRF token gagal. Silakan muat ulang halaman.';
+    } elseif (!isset($modules[$moduleKey])) {
+        $apiError = 'Modul tidak ditemukan.';
+    } else {
+        // Resolve sub module strictly from server definition to prevent SSRF
+        $targetSub = null;
+        foreach (($modules[$moduleKey]['sub_modules'] ?? []) as $sm) {
+            if ($sm['key'] === $subKey) {
+                $targetSub = $sm;
+                break;
+            }
+        }
+
+        if (!$targetSub) {
+            $apiError = 'Endpoint tidak ditemukan dalam modul ini.';
+        } else {
+            // Strictly determine method, path, and baseUrl from code definition (SSRF mitigation)
+            $method  = strtoupper($targetSub['method'] ?? 'GET');
+            $path    = $targetSub['path'] ?? '';
+            $baseUrl = getBaseUrl($moduleKey, $currentDomain, $isDevMode);
+
+            $rawParams  = $_POST['params'] ?? '{}';
+            $rawBody    = $_POST['body']   ?? '{}';
+
+            $params = is_array($rawParams) ? $rawParams : (json_decode($rawParams, true) ?: []);
+            $body   = is_array($rawBody)   ? $rawBody   : (json_decode($rawBody,   true) ?: []);
 
     /**
      * Transform serializeArray() format
@@ -231,6 +252,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $apiResponse = $result['apiResponse'];
         }
     }
+}
+}
 
     // Re-find selected module/sub for UI highlight
     // Only re-find if $selectedMod is not already set correctly
@@ -311,7 +334,7 @@ include __DIR__ . '/inc/header.php';
                     <?php
                     $isActive   = ($modKey === $selectedMod);
                     $subCount   = count($mod['sub_modules']);
-                    $expanded   = $isActive || $selectedSub !== null;
+                    $expanded   = $isActive;
                     // Add icon and label if not present
                     $modIcon = $mod['icon'] ?? '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z"/></svg>';
                     $modLabel = $mod['label'] ?? $modKey;
@@ -385,7 +408,25 @@ include __DIR__ . '/inc/header.php';
                             <span class="ml-2 px-2 py-0.5 bg-primary-50 rounded text-[10px] text-primary-600 font-semibold"><?= strtoupper($apiDomainVersion) ?> API</span>
                         </p>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right flex items-center gap-2">
+                        <?php
+                        $docMap = [
+                            'vclaim' => 'vclaim',
+                            'antrean_rs' => 'antreanrs',
+                            'antrean_fktp' => 'antreanfktp',
+                            'apotek' => 'apotek',
+                            'pcare' => 'pcare',
+                            'icare' => 'icare',
+                            'ws_rekam_medis' => 'rekammedis',
+                            'aplicares' => 'aplicares',
+                            'tools' => 'batalkodebooking'
+                        ];
+                        $targetDoc = $docMap[$selectedMod] ?? $selectedMod;
+                        ?>
+                        <a href="docs.php?doc=<?= urlencode($targetDoc) ?>" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100 transition-colors" title="Buka dokumentasi lengkap .md untuk modul ini">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            <span>Dokumentasi .md</span>
+                        </a>
                         <span class="inline-block bg-gray-100 text-gray-700 text-xs px-3 py-1 rounded-full font-medium">
                             <?= count($activeModule['sub_modules']) ?> Endpoints
                         </span>
@@ -500,26 +541,35 @@ include __DIR__ . '/inc/header.php';
                         <form method="POST" action="" class="space-y-4">
 
                             <input type="hidden" name="action"        value="send_request">
-                            <input type="hidden" name="module_key"     value="<?= htmlspecialchars($selectedMod) ?>">
-                            <input type="hidden" name="sub_key"        value="<?= htmlspecialchars($selectedSub) ?>">
-                            <input type="hidden" name="method"         value="<?= htmlspecialchars($selectedSubData['method']) ?>">
-                            <input type="hidden" name="path"           value="<?= htmlspecialchars($selectedSubData['path']) ?>">
-                            <input type="hidden" name="base_url"       value="<?= htmlspecialchars($activeModule['base_url']) ?>">
-                            <input type="hidden" name="module"         value="<?= htmlspecialchars($selectedMod) ?>">
-                            <input type="hidden" name="sub"            value="<?= htmlspecialchars($selectedSub) ?>">
+                            <input type="hidden" name="csrf_token"    value="<?= htmlspecialchars(BPJSBootstrap::getCsrfToken()) ?>">
+                            <input type="hidden" name="module_key"    value="<?= htmlspecialchars($selectedMod) ?>">
+                            <input type="hidden" name="sub_key"       value="<?= htmlspecialchars($selectedSub) ?>">
+                            <input type="hidden" name="module"        value="<?= htmlspecialchars($selectedMod) ?>">
+                            <input type="hidden" name="sub"           value="<?= htmlspecialchars($selectedSub) ?>">
 
-                            <!-- Decrypt Toggle -->
-                            <div class="flex items-center gap-2">
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-primary-500">
-                                        <span class="text-sm text-gray-700 flex items-center gap-1">
-                                            <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2h12zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                            </svg>
-                                            Decrypt Response (LZString + AES-256)
-                                        </span>
-                                    </label>
-                                </div>
+                            <!-- Top Action Bar (Send Button & Decrypt Toggle) -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" name="decrypt" value="1" <?= ($decrypt ?? false) ? 'checked' : '' ?> class="w-4 h-4 accent-primary-500 rounded">
+                                    <span class="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2h12zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
+                                        Decrypt Response (LZString + AES-256)
+                                    </span>
+                                </label>
+
+                                <!-- Send Button (Top) -->
+                                <button
+                                    type="submit"
+                                    class="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-md shadow-primary-500/25 transition-all flex items-center justify-center gap-2 flex-shrink-0 cursor-pointer"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                    </svg>
+                                    <span>Kirim Request</span>
+                                </button>
+                            </div>
 
                             <!-- Custom Headers -->
                             <?php if (!empty($selectedSubData['headers'])): ?>
@@ -622,16 +672,6 @@ include __DIR__ . '/inc/header.php';
                                 </div>
                             <?php endif; ?>
 
-                            <!-- Send Button -->
-                            <button
-                                type="submit"
-                                class="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-primary-500/30 transition-all flex items-center justify-center gap-2"
-                            >
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                                </svg>
-                                Kirim Request
-                            </button>
 
                         </form>
 
@@ -726,7 +766,7 @@ include __DIR__ . '/inc/header.php';
                                 </div>
                             <?php endif; ?>
                         </div>
-                    <?php elseif (!empty($debugInfo)): ?>
+                    <?php elseif (!empty($debugInfo) && filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN)): ?>
                         <div class="border-t border-gray-200 pt-5 mt-5">
                             <h4 class="text-sm font-bold text-amber-600 mb-3 flex items-center gap-1">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -751,16 +791,20 @@ include __DIR__ . '/inc/header.php';
         function toggleModule(key) {
             const subs   = document.getElementById('subs-' + key);
             const arrow  = document.getElementById('arrow-' + key);
-            const isOpen = subs.style.maxHeight && subs.style.maxHeight !== '0px';
+            if (!subs) return;
 
-            if (isOpen) {
-                subs.style.maxHeight = '0px';
-                subs.style.opacity   = '0';
-                arrow.classList.remove('rotate-90');
+            const isClosed = subs.classList.contains('max-h-0') || subs.style.maxHeight === '0px';
+
+            if (isClosed) {
+                subs.classList.remove('max-h-0', 'opacity-0');
+                subs.classList.add('opacity-100');
+                subs.style.maxHeight = (subs.scrollHeight || 1000) + 'px';
+                if (arrow) arrow.classList.add('rotate-90');
             } else {
-                subs.style.maxHeight = subs.scrollHeight + 'px';
-                subs.style.opacity   = '1';
-                arrow.classList.add('rotate-90');
+                subs.style.maxHeight = '0px';
+                subs.classList.remove('opacity-100', 'max-h-[2000px]');
+                subs.classList.add('max-h-0', 'opacity-0');
+                if (arrow) arrow.classList.remove('rotate-90');
             }
         }
 
@@ -824,7 +868,7 @@ include __DIR__ . '/inc/header.php';
             });
         });
 
-        // Persist form data after submission
+        // Persist form data during active tab session
         function getStorageKey() {
             return 'bpjs_form_' + <?= json_encode($selectedMod) ?> + '_' + <?= json_encode($selectedSub) ?>;
         }
@@ -833,24 +877,36 @@ include __DIR__ . '/inc/header.php';
             const formData = {};
             const inputs = document.querySelectorAll('input[type="text"], input[type="number"], textarea');
             inputs.forEach(function(input) {
-                if (input.name) {
+                if (input.name && input.name !== 'csrf_token' && input.type !== 'hidden') {
                     formData[input.name] = input.value;
                 }
             });
-            localStorage.setItem(getStorageKey(), JSON.stringify(formData));
+            sessionStorage.setItem(getStorageKey(), JSON.stringify(formData));
         }
 
         function restoreFormData() {
-            const saved = localStorage.getItem(getStorageKey());
+            const saved = sessionStorage.getItem(getStorageKey());
             if (!saved) return;
-            const formData = JSON.parse(saved);
-            Object.keys(formData).forEach(function(name) {
-                const input = document.querySelector('[name="' + name + '"]');
-                if (input) {
-                    input.value = formData[name];
-                }
-            });
+            try {
+                const formData = JSON.parse(saved);
+                Object.keys(formData).forEach(function(name) {
+                    const input = document.querySelector('[name="' + name + '"]');
+                    if (input && input.type !== 'hidden') {
+                        input.value = formData[name];
+                    }
+                });
+            } catch (e) {}
         }
+
+        // Clean up any legacy localStorage entries
+        try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const k = localStorage.key(i);
+                if (k && k.indexOf('bpjs_form_') === 0) {
+                    localStorage.removeItem(k);
+                }
+            }
+        } catch (e) {}
 
         // Save form data on input/change
         document.addEventListener('input', function(e) {

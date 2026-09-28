@@ -28,7 +28,7 @@ $maskedConsId = $showConsId ? str_repeat('*', strlen($consId)) : '';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle) ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="assets/js/tailwind.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -163,6 +163,7 @@ $maskedConsId = $showConsId ? str_repeat('*', strlen($consId)) : '';
         <!-- Navbar -->
         <nav class="flex items-center gap-1 ml-6">
             <a href="index.php" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors <?= $activeNav === 'catalog' ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' ?>">Catalog</a>
+            <a href="docs.php" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors <?= $activeNav === 'docs' ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' ?>">Dokumentasi</a>
             <a href="monitoring.php" class="px-3 py-2 rounded-lg text-sm font-semibold transition-colors <?= $activeNav === 'monitoring' ? 'bg-primary-50 text-primary-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900' ?>">Monitoring Bridging</a>
         </nav>
         <?php if ($showConsId || $showModeSelector || $showVersionSelector): ?>

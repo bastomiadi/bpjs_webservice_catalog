@@ -1,0 +1,33 @@
+# ==============================================================================
+# Security & Access Control for Root Directory
+# ==============================================================================
+
+# Disable directory listing
+Options -Indexes
+
+# Block sensitive and hidden files from being downloaded via HTTP
+<FilesMatch "^\.(env|git|DS_Store|htaccess)|composer\.(json|lock)|README\.md$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to internal code and directories
+    RewriteRule ^(app|src|library|docs|\.git)(/|$) - [F,L,NC]
+
+    # If already pointing to public or static asset, do not rewrite
+    RewriteRule ^public/ - [L]
+
+    # Route root request to public/
+    RewriteRule ^$ public/index.php [L]
+
+    # Route all other non-public requests into public/
+    RewriteRule ^((?!public/).*)$ public/$1 [L]
+</IfModule>

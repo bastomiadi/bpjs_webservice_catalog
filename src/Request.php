@@ -29,10 +29,25 @@ class BPJSRequest
             $headers[] = 'X-authorization: ' . $config['authorization'];
         }
 
+        // Validate scheme
+        $scheme = parse_url($config['url'] ?? '', PHP_URL_SCHEME);
+        if (!in_array(strtolower((string)$scheme), ['https', 'http'], true)) {
+            return [
+                'status' => false,
+                'message' => 'Invalid URL scheme: only HTTP and HTTPS are permitted.',
+                'http_code' => 0,
+            ];
+        }
+
         // Custom headers (e.g. x-token, x-username, x-password for antrean_fktp)
         if (!empty($config['custom_headers'])) {
             foreach ($config['custom_headers'] as $hName => $hValue) {
-                $headers[] = $hName . ': ' . $hValue;
+                // Strip CR and LF to prevent HTTP header injection
+                $cleanName = trim(str_replace(["\r", "\n"], '', (string)$hName));
+                $cleanValue = trim(str_replace(["\r", "\n"], '', (string)$hValue));
+                if ($cleanName !== '') {
+                    $headers[] = $cleanName . ': ' . $cleanValue;
+                }
             }
         }
 
@@ -41,7 +56,9 @@ class BPJSRequest
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_CUSTOMREQUEST => $config['method']
+            CURLOPT_CUSTOMREQUEST => $config['method'],
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ];
 
         // Add JSON body for POST/PUT/PATCH requests
