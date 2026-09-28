@@ -95,20 +95,24 @@ catalog_ws_bpjs/
 │       ├── icare.php
 │       ├── ws_rekam_medis.php
 │       └── aplicares.php
-├── docs/                       # API documentation files
-│       ├── vclaim.txt
-│       ├── antreanrs.txt
-│       ├── antreanfktp.txt
-│       ├── apotek.txt
-│       ├── pcare.txt
-│       ├── icare.txt
-│       ├── rekammedis.txt
-│       └── aplicares.txt
+├── docs/                       # API documentation files (.md & .txt)
+│       ├── vclaim.md / vclaim.txt
+│       ├── antreanrs.md / antreanrs.txt
+│       ├── antreanfktp.md / antreanfktp.txt
+│       ├── apotek.md / apotek.txt
+│       ├── pcare.md / pcare.txt
+│       ├── icare.md / icare.txt
+│       ├── rekammedis.md / rekammedis.txt
+│       ├── aplicares.md / aplicares.txt
+│       ├── create_signature_pcare.md / create_signature_pcare.txt
+│       └── batalkodebooking.md / batalkodebooking.txt
 ├── library/                    # Third-party libraries
 │   └── lz-string/              # String compression library
 ├── public/
 │   ├── index.php               # Landing page entry point
-│   ├── catalog.php             # Main application entry point
+│   ├── catalog.php             # Main application entry point (API Testing)
+│   ├── docs.php                # Documentation viewer (Markdown .md reader)
+│   ├── monitoring.php          # Bridging monitor probe tool
 │   └── inc/
 │       ├── header.php          # Reusable header component
 │       └── footer.php          # Reusable footer component

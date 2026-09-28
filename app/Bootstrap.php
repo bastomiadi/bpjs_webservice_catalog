@@ -26,6 +26,12 @@ class BPJSBootstrap
         
         // Load environment
         self::loadEnvironment();
+
+        // Configure error reporting based on APP_DEBUG
+        self::configureErrorReporting();
+
+        // Initialize safe session
+        self::initSession();
         
         // Load LZString library (manual loading)
         self::loadLZString();
@@ -34,6 +40,63 @@ class BPJSBootstrap
         self::loadHelpers();
         
         self::$initialized = true;
+    }
+
+    /**
+     * Configure error reporting
+     */
+    private static function configureErrorReporting()
+    {
+        $debug = filter_var($_ENV['APP_DEBUG'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        if ($debug) {
+            error_reporting(E_ALL);
+            ini_set('display_errors', '1');
+        } else {
+            error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
+            ini_set('display_errors', '0');
+        }
+    }
+
+    /**
+     * Initialize secure session if not active
+     */
+    public static function initSession()
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            // Secure session cookie flags
+            $params = session_get_cookie_params();
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path'     => $params['path'] ?? '/',
+                'domain'   => $params['domain'] ?? '',
+                'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+            session_start();
+        }
+    }
+
+    /**
+     * Get or generate CSRF token
+     */
+    public static function getCsrfToken()
+    {
+        self::initSession();
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+
+    /**
+     * Validate CSRF token
+     */
+    public static function validateCsrfToken($token)
+    {
+        self::initSession();
+        $sessionToken = $_SESSION['csrf_token'] ?? '';
+        return !empty($sessionToken) && is_string($token) && hash_equals($sessionToken, $token);
     }
 
     /**

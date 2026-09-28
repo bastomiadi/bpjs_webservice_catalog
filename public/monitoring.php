@@ -1,7 +1,5 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
 $basePath = __DIR__ . '/..';
 
@@ -33,6 +31,11 @@ $probePaths = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'run_probe') {
     header('Content-Type: application/json');
     $now = date('Y-m-d H:i:s');
+
+    if (!BPJSBootstrap::validateCsrfToken($_POST['csrf_token'] ?? '')) {
+        echo json_encode(['success' => false, 'time' => $now, 'ms' => 0, 'code' => '', 'message' => 'CSRF validation failed', 'http_code' => 403, 'url' => '']);
+        exit;
+    }
 
     $endpoint = $_POST['endpoint'] ?? '';
     $params   = json_decode($_POST['params'] ?? '{}', true);
@@ -110,6 +113,7 @@ include __DIR__ . '/inc/header.php';
 <script>
     const API_VERSION_COOKIE = 'bpjs_api_version';
     const DEV_MODE_COOKIE = 'bpjs_dev_mode';
+    const CSRF_TOKEN = <?= json_encode(BPJSBootstrap::getCsrfToken()) ?>;
 
     const probes = [
         { key: 'peserta', name: 'Get Peserta', desc: 'Peserta by No Kartu' },
@@ -227,6 +231,7 @@ include __DIR__ . '/inc/header.php';
 
         const fd = new FormData();
         fd.append('action', 'run_probe');
+        fd.append('csrf_token', CSRF_TOKEN);
         fd.append('endpoint', key);
         fd.append('params', '{}');
 

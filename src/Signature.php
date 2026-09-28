@@ -16,9 +16,7 @@ class BPSignature
      */
     public static function generate($consId, $secretKey)
     {
-        date_default_timezone_set('UTC');
-
-        $timestamp = strval(time() - strtotime('1970-01-01 00:00:00'));
+        $timestamp = (string) time();
 
         $signature = base64_encode(
             hash_hmac(
